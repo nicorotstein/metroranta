@@ -1,0 +1,171 @@
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+}
+
+.app {
+  position: relative;
+  height: 100vh;
+  width: 100%;
+}
+
+.controls {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+  z-index: 1000;
+  max-width: 250px;
+}
+
+.control-group {
+  margin-bottom: 10px;
+}
+
+.control-group label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.legend {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #ddd;
+}
+
+.edit-controls {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #ddd;
+}
+
+.edit-btn {
+  background: #3498db;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin: 2px;
+  font-size: 12px;
+}
+
+.edit-btn:hover {
+  background: #2980b9;
+}
+
+.edit-btn.active {
+  background: #e74c3c;
+}
+
+.suggestion-form {
+  position: absolute;
+  top: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 15px rgba(0,0,0,0.3);
+  z-index: 1002;
+  min-width: 300px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.form-group input, .form-group select, .form-group textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.form-group textarea {
+  height: 60px;
+  resize: vertical;
+}
+
+.location-info {
+  color: #666;
+  font-size: 12px;
+}
+
+.form-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.form-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.form-btn.primary {
+  background: #2ecc71;
+  color: white;
+}
+
+.form-btn.secondary {
+  background: #95a5a6;
+  color: white;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+
+.legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+  z-index: 1001;
+}
+
+.temp-marker {
+  background: none;
+  border: none;
+  text-align: center;
+}
