@@ -57,7 +57,7 @@ function AmenityMarker({ amenity, type, onEditSpot, onDeleteSuggestion, onFlagSp
           {distanceToFinish !== null && (
             <>Distance to finish: {(distanceToFinish / 1000).toFixed(1)}km<br /></>
           )}
-          
+
           {amenity.tags?.opening_hours && (
             <>Hours: {amenity.tags.opening_hours}<br /></>
           )}
@@ -142,18 +142,31 @@ function MapView({
   useEffect(() => {
     if (mapRef.current && routeCoords.length > 0) {
       const map = mapRef.current
+      // Add a small delay to ensure map is fully initialized
       const bounds = L.latLngBounds(routeCoords)
-      map.fitBounds(bounds, { padding: [10, 10] })
+      console.log('Route bounds:', bounds.toBBoxString())
+      console.log('Route points:', routeCoords.length)
+
+      // More generous padding and no max zoom constraint initially
+      map.fitBounds(bounds, {
+        padding: [80, 80] // Increased padding
+      })
     }
   }, [routeCoords])
 
-  const center = routeCoords.length > 0 ? routeCoords[0] : [60.1699, 24.9384]
+  // Calculate center of route bounds for better initial positioning
+  const center = routeCoords.length > 0
+    ? [
+      (Math.min(...routeCoords.map(c => c[0])) + Math.max(...routeCoords.map(c => c[0]))) / 2,
+      (Math.min(...routeCoords.map(c => c[1])) + Math.max(...routeCoords.map(c => c[1]))) / 2
+    ]
+    : [60.1699, 24.9384]
 
   return (
     <MapContainer
       ref={mapRef}
       center={center}
-      zoom={13}
+      zoom={11} // Much lower initial zoom to show more area
       style={{ height: '100vh', width: '100%', zIndex: 1 }}
       whenCreated={(mapInstance) => {
         mapRef.current = mapInstance
@@ -174,6 +187,46 @@ function MapView({
           weight={3}
           opacity={0.8}
         />
+      )}
+
+      {/* Start Flag - Green */}
+      {routeCoords.length > 0 && (
+        <Marker
+          position={routeCoords[0]}
+          icon={L.divIcon({
+            className: 'start-flag',
+            html: '🟢',
+            iconSize: [25, 25],
+            iconAnchor: [12, 25]
+          })}
+        >
+          <Popup>
+            <div>
+              <strong>Start</strong><br />
+              Route begins here
+            </div>
+          </Popup>
+        </Marker>
+      )}
+
+      {/* Finish Flag - Checkered */}
+      {routeCoords.length > 1 && (
+        <Marker
+          position={routeCoords[routeCoords.length - 1]}
+          icon={L.divIcon({
+            className: 'finish-flag',
+            html: '🏁',
+            iconSize: [25, 25],
+            iconAnchor: [12, 25]
+          })}
+        >
+          <Popup>
+            <div>
+              <strong>Finish</strong><br />
+              Route ends here
+            </div>
+          </Popup>
+        </Marker>
       )}
 
       {/* Amenity Markers */}
