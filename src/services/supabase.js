@@ -223,31 +223,71 @@ class SupabaseGPXAmenityFinder {
         }
     }
 
-    // Get user-suggested amenities from Supabase
-    async getUserSuggestedAmenities(bounds, type) {
+    // Get user-suggested amenities from Supabase (all statuses for user feedback)
+    async getUserSuggestedAmenities(bounds, type = null) {
         if (!this.supabase) return []
 
         try {
-            const { data, error } = await this.supabase
+            let query = this.supabase
                 .from('user_suggested_amenities')
                 .select('*')
-                .eq('type', type)
-                .eq('status', 'approved')
                 .gte('latitude', bounds.south)
                 .lte('latitude', bounds.north)
                 .gte('longitude', bounds.west)
                 .lte('longitude', bounds.east)
+
+            if (type) {
+                query = query.eq('type', type)
+            }
+
+            const { data, error } = await query
 
             if (error) {
                 console.error('Error fetching user suggestions:', error)
                 return []
             }
 
-            return data
+            return data || []
 
         } catch (error) {
             console.error('Error in getUserSuggestedAmenities:', error)
             return []
+        }
+    }
+
+    // Get all user suggestions (for loading initial state)
+    async getAllUserSuggestions() {
+        if (!this.supabase) return { toilets: [], cafes: [], indoor: [] }
+
+        try {
+            const { data, error } = await this.supabase
+                .from('user_suggested_amenities')
+                .select('*')
+                .in('status', ['approved', 'pending']) // Show approved and pending
+
+            if (error) {
+                console.error('Error fetching all user suggestions:', error)
+                return { toilets: [], cafes: [], indoor: [] }
+            }
+
+            // Group by type
+            const grouped = { toilets: [], cafes: [], indoor: [] }
+            data?.forEach(suggestion => {
+                if (grouped[suggestion.type]) {
+                    grouped[suggestion.type].push({
+                        ...suggestion,
+                        lat: suggestion.latitude,
+                        lng: suggestion.longitude,
+                        userSuggestion: true
+                    })
+                }
+            })
+
+            return grouped
+
+        } catch (error) {
+            console.error('Error in getAllUserSuggestions:', error)
+            return { toilets: [], cafes: [], indoor: [] }
         }
     }
 
@@ -279,6 +319,30 @@ class SupabaseGPXAmenityFinder {
 
         } catch (error) {
             console.error('Error submitting suggestion:', error)
+            throw error
+        }
+    }
+
+    // Delete user suggestion from Supabase
+    async deleteUserSuggestion(id) {
+        if (!this.supabase) {
+            throw new Error('Supabase not configured')
+        }
+
+        try {
+            const { error } = await this.supabase
+                .from('user_suggested_amenities')
+                .delete()
+                .eq('id', id)
+
+            if (error) {
+                throw error
+            }
+
+            return true
+
+        } catch (error) {
+            console.error('Error deleting suggestion:', error)
             throw error
         }
     }

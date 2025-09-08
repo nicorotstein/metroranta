@@ -26,6 +26,15 @@ function App() {
     loadUserSuggestions()
   }, [])
 
+  const loadUserSuggestions = async () => {
+    try {
+      const suggestions = await gpxFinder.getAllUserSuggestions()
+      setUserSuggestions(suggestions)
+    } catch (error) {
+      console.error('Error loading user suggestions:', error)
+    }
+  }
+
   const loadGPXData = async () => {
     try {
       console.log('Starting to load GPX data...')
@@ -118,50 +127,21 @@ function App() {
     setLoading(false)
   }
 
-  const loadUserSuggestions = () => {
-    const saved = localStorage.getItem('userSuggestions')
-    if (saved) {
-      try {
-        const suggestions = JSON.parse(saved)
-        const categorized = { toilets: [], cafes: [], indoor: [] }
-        suggestions.forEach(suggestion => {
-          if (categorized[suggestion.type]) {
-            categorized[suggestion.type].push(suggestion)
-          }
-        })
-        setUserSuggestions(categorized)
-      } catch (e) {
-        console.error('Error loading user suggestions:', e)
-      }
-    }
-  }
-
-  const saveUserSuggestions = (newSuggestions) => {
-    const allSuggestions = []
-    Object.keys(newSuggestions).forEach(type => {
-      newSuggestions[type].forEach(suggestion => {
-        allSuggestions.push({ ...suggestion, type })
-      })
-    })
-    localStorage.setItem('userSuggestions', JSON.stringify(allSuggestions))
-    setUserSuggestions(newSuggestions)
-  }
-
-  const addUserSuggestion = (suggestion) => {
-    const newSuggestions = {
-      ...userSuggestions,
-      [suggestion.type]: [...userSuggestions[suggestion.type], suggestion]
-    }
-    saveUserSuggestions(newSuggestions)
-  }
-
-  const deleteUserSuggestion = (id, type) => {
+  const deleteUserSuggestion = async (id, type) => {
     if (confirm('Are you sure you want to delete this suggestion?')) {
-      const newSuggestions = {
-        ...userSuggestions,
-        [type]: userSuggestions[type].filter(suggestion => suggestion.id !== id)
+      try {
+        await gpxFinder.deleteUserSuggestion(id)
+        // Remove from local state immediately for UI feedback
+        const newSuggestions = {
+          ...userSuggestions,
+          [type]: userSuggestions[type].filter(suggestion => suggestion.id !== id)
+        }
+        setUserSuggestions(newSuggestions)
+        alert('Suggestion deleted successfully.')
+      } catch (error) {
+        console.error('Error deleting suggestion:', error)
+        alert('Sorry, there was an error deleting the suggestion.')
       }
-      saveUserSuggestions(newSuggestions)
     }
   }
 
@@ -238,7 +218,7 @@ function App() {
     setSelectedSpot(null)
   }
 
-  const submitSuggestion = (formData) => {
+  const submitSuggestion = async (formData) => {
     if (!tempMarkerPosition) {
       alert('Please click on the map to select a location.')
       return
@@ -262,10 +242,20 @@ function App() {
     } else {
       // Submit new suggestion to Supabase
       try {
-        await gpxFinder.submitSuggestion(suggestion)
+        const result = await gpxFinder.submitSuggestion(suggestion)
         alert(`Thank you! Your suggestion "${suggestion.name}" has been submitted for review.`)
-        // Also add to local state for immediate feedback
-        addUserSuggestion(suggestion)
+        
+        // Add to local state for immediate UI feedback (as pending)
+        const newSuggestions = {
+          ...userSuggestions,
+          [suggestion.type]: [...userSuggestions[suggestion.type], {
+            ...suggestion,
+            id: result.id,
+            status: 'pending',
+            userSuggestion: true
+          }]
+        }
+        setUserSuggestions(newSuggestions)
       } catch (error) {
         console.error('Error submitting suggestion:', error)
         alert('Sorry, there was an error submitting your suggestion. Please try again.')
