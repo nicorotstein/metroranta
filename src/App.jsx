@@ -3,7 +3,7 @@ import MapView from './components/MapView'
 import Controls from './components/Controls'
 import SuggestionForm from './components/SuggestionForm'
 import LoadingSpinner from './components/LoadingSpinner'
-import GPXAmenityFinder from './utils/gpx-parser'
+import SupabaseGPXAmenityFinder from './services/supabase'
 import 'leaflet/dist/leaflet.css'
 import './App.css'
 
@@ -19,7 +19,7 @@ function App() {
   const [selectedSpot, setSelectedSpot] = useState(null)
   const [tempMarkerPosition, setTempMarkerPosition] = useState(null)
 
-  const gpxFinder = new GPXAmenityFinder()
+  const gpxFinder = new SupabaseGPXAmenityFinder()
 
   useEffect(() => {
     loadGPXData()
@@ -33,7 +33,7 @@ function App() {
       setRouteCoords(routeData)
       
       // Set route coordinates in GPX finder for amenity search
-      gpxFinder.routeCoords = routeData
+      gpxFinder.setRouteCoords(routeData)
       console.log(`Loaded ${routeData.length} route points`)
 
       // Find real amenities near route using Overpass API
@@ -177,6 +177,38 @@ function App() {
     setShowSuggestionForm(true)
   }
 
+  const handleFlagSpot = async (amenityId, type, name) => {
+    const flagOptions = [
+      { key: 'incorrect_location', label: 'Location is incorrect' },
+      { key: 'closed_permanently', label: 'Permanently closed' },
+      { key: 'incorrect_type', label: 'Wrong category/type' },
+      { key: 'duplicate', label: 'Duplicate entry' },
+      { key: 'other', label: 'Other issue' }
+    ]
+
+    const flagTypeIndex = prompt(
+      `Report issue with "${name}":\n\n` +
+      flagOptions.map((opt, idx) => `${idx + 1}. ${opt.label}`).join('\n') +
+      '\n\nSelect option (1-5):'
+    )
+
+    const flagIndex = parseInt(flagTypeIndex) - 1
+    if (flagIndex < 0 || flagIndex >= flagOptions.length) {
+      return // User cancelled or invalid selection
+    }
+
+    const flagType = flagOptions[flagIndex].key
+    const reason = prompt('Optional: Provide additional details about the issue:') || ''
+
+    try {
+      await gpxFinder.flagAmenity(amenityId, flagType, reason)
+      alert(`Thank you for reporting this issue. It will be reviewed by our team.`)
+    } catch (error) {
+      console.error('Error flagging amenity:', error)
+      alert('Sorry, there was an error submitting your report. Please try again.')
+    }
+  }
+
   const toggleSuggestMode = () => {
     const newMode = editMode === 'suggest' ? null : 'suggest'
     setEditMode(newMode)
@@ -228,8 +260,17 @@ function App() {
       // Update existing suggestion - for now just show alert
       alert(`Spot "${suggestion.name}" information updated!`)
     } else {
-      // Add new suggestion
-      addUserSuggestion(suggestion)
+      // Submit new suggestion to Supabase
+      try {
+        await gpxFinder.submitSuggestion(suggestion)
+        alert(`Thank you! Your suggestion "${suggestion.name}" has been submitted for review.`)
+        // Also add to local state for immediate feedback
+        addUserSuggestion(suggestion)
+      } catch (error) {
+        console.error('Error submitting suggestion:', error)
+        alert('Sorry, there was an error submitting your suggestion. Please try again.')
+        return
+      }
     }
 
     closeSuggestionForm()
@@ -250,6 +291,7 @@ function App() {
         onMapClick={handleMapClick}
         onEditSpot={handleEditSpot}
         onDeleteSuggestion={deleteUserSuggestion}
+        onFlagSpot={handleFlagSpot}
       />
       
       <Controls

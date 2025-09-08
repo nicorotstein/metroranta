@@ -30,7 +30,7 @@ function MapClickHandler({ onMapClick }) {
   return null
 }
 
-function AmenityMarker({ amenity, type, onEditSpot, onDeleteSuggestion }) {
+function AmenityMarker({ amenity, type, onEditSpot, onDeleteSuggestion, onFlagSpot }) {
   const distance = amenity.distanceToRoute ? Math.round(amenity.distanceToRoute) : '~50'
 
   return (
@@ -82,7 +82,7 @@ function AmenityMarker({ amenity, type, onEditSpot, onDeleteSuggestion }) {
             >
               Edit
             </button>
-            {amenity.userSuggestion && (
+            {amenity.userSuggestion ? (
               <button
                 onClick={() => onDeleteSuggestion(amenity.id, type)}
                 style={{
@@ -91,10 +91,26 @@ function AmenityMarker({ amenity, type, onEditSpot, onDeleteSuggestion }) {
                   border: 'none',
                   padding: '4px 8px',
                   borderRadius: '3px',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  marginLeft: '5px'
                 }}
               >
                 Delete
+              </button>
+            ) : (
+              <button
+                onClick={() => onFlagSpot(amenity.id, type, amenity.name)}
+                style={{
+                  background: '#f39c12',
+                  color: 'white',
+                  border: 'none',
+                  padding: '4px 8px',
+                  borderRadius: '3px',
+                  cursor: 'pointer',
+                  marginLeft: '5px'
+                }}
+              >
+                Report Issue
               </button>
             )}
           </div>
@@ -112,7 +128,8 @@ function MapView({
   tempMarkerPosition,
   onMapClick,
   onEditSpot,
-  onDeleteSuggestion
+  onDeleteSuggestion,
+  onFlagSpot
 }) {
   const mapRef = useRef()
 
@@ -162,6 +179,7 @@ function MapView({
             type={type}
             onEditSpot={onEditSpot}
             onDeleteSuggestion={onDeleteSuggestion}
+            onFlagSpot={onFlagSpot}
           />
         ))
       )}
@@ -175,6 +193,7 @@ function MapView({
             type={type}
             onEditSpot={onEditSpot}
             onDeleteSuggestion={onDeleteSuggestion}
+            onFlagSpot={onFlagSpot}
           />
         ))
       )}
