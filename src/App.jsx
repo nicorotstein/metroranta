@@ -18,8 +18,7 @@ function App() {
   const [showSuggestionForm, setShowSuggestionForm] = useState(false)
   const [selectedSpot, setSelectedSpot] = useState(null)
   const [tempMarkerPosition, setTempMarkerPosition] = useState(null)
-
-  const gpxFinder = new SupabaseGPXAmenityFinder()
+  const [gpxFinder] = useState(() => new SupabaseGPXAmenityFinder())
 
   useEffect(() => {
     loadGPXData()
@@ -40,18 +39,18 @@ function App() {
       console.log('Starting to load GPX data...')
       const routeData = await loadRouteData()
       setRouteCoords(routeData)
-      
+
       // Set route coordinates in GPX finder for amenity search
       gpxFinder.setRouteCoords(routeData)
       console.log(`Loaded ${routeData.length} route points`)
 
       // Find real amenities near route using Overpass API
       await findRealAmenities()
-      
+
     } catch (error) {
       console.error('Error loading route data:', error)
       setLoadingText('Error loading route data. Using sample data...')
-      
+
       // Fallback to sample data
       await loadSampleData()
     }
@@ -79,12 +78,12 @@ function App() {
       setLoadingText('Finding nearby amenities...')
       const foundAmenities = await gpxFinder.findAmenities(100)
       setAmenities(foundAmenities)
-      
+
       const totalFound = foundAmenities.toilets.length + foundAmenities.cafes.length + foundAmenities.indoor.length
       console.log(`Total amenities found: ${totalFound}`)
-      
+
       setLoading(false)
-      
+
     } catch (error) {
       console.error('Error finding amenities:', error)
       // Fallback to sample data
@@ -95,19 +94,19 @@ function App() {
   const loadSampleData = async () => {
     const sampleAmenities = {
       toilets: [
-        {lat: 60.1699, lng: 24.9384, name: "Central Station Toilets", distanceToRoute: 50},
-        {lat: 60.1580, lng: 24.9506, name: "Market Square Public Toilets", distanceToRoute: 80},
-        {lat: 60.1674, lng: 24.9515, name: "Esplanade Park Toilets", distanceToRoute: 30}
+        { lat: 60.1699, lng: 24.9384, name: "Central Station Toilets", distanceToRoute: 50 },
+        { lat: 60.1580, lng: 24.9506, name: "Market Square Public Toilets", distanceToRoute: 80 },
+        { lat: 60.1674, lng: 24.9515, name: "Esplanade Park Toilets", distanceToRoute: 30 }
       ],
       cafes: [
-        {lat: 60.1682, lng: 24.9355, name: "Stockmann Café", distanceToRoute: 60},
-        {lat: 60.1625, lng: 24.9444, name: "Café Aalto", distanceToRoute: 40},
-        {lat: 60.1612, lng: 24.9502, name: "Old Market Hall Café", distanceToRoute: 90}
+        { lat: 60.1682, lng: 24.9355, name: "Stockmann Café", distanceToRoute: 60 },
+        { lat: 60.1625, lng: 24.9444, name: "Café Aalto", distanceToRoute: 40 },
+        { lat: 60.1612, lng: 24.9502, name: "Old Market Hall Café", distanceToRoute: 90 }
       ],
       indoor: [
-        {lat: 60.1699, lng: 24.9384, name: "Helsinki Central Station", distanceToRoute: 25},
-        {lat: 60.1641, lng: 24.9402, name: "Stockmann Department Store", distanceToRoute: 70},
-        {lat: 60.1595, lng: 24.9525, name: "City Hall", distanceToRoute: 45}
+        { lat: 60.1699, lng: 24.9384, name: "Helsinki Central Station", distanceToRoute: 25 },
+        { lat: 60.1641, lng: 24.9402, name: "Stockmann Department Store", distanceToRoute: 70 },
+        { lat: 60.1595, lng: 24.9525, name: "City Hall", distanceToRoute: 45 }
       ]
     }
 
@@ -158,34 +157,14 @@ function App() {
   }
 
   const handleFlagSpot = async (amenityId, type, name) => {
-    const flagOptions = [
-      { key: 'incorrect_location', label: 'Location is incorrect' },
-      { key: 'closed_permanently', label: 'Permanently closed' },
-      { key: 'incorrect_type', label: 'Wrong category/type' },
-      { key: 'duplicate', label: 'Duplicate entry' },
-      { key: 'other', label: 'Other issue' }
-    ]
-
-    const flagTypeIndex = prompt(
-      `Report issue with "${name}":\n\n` +
-      flagOptions.map((opt, idx) => `${idx + 1}. ${opt.label}`).join('\n') +
-      '\n\nSelect option (1-5):'
-    )
-
-    const flagIndex = parseInt(flagTypeIndex) - 1
-    if (flagIndex < 0 || flagIndex >= flagOptions.length) {
-      return // User cancelled or invalid selection
-    }
-
-    const flagType = flagOptions[flagIndex].key
-    const reason = prompt('Optional: Provide additional details about the issue:') || ''
-
-    try {
-      await gpxFinder.flagAmenity(amenityId, flagType, reason)
-      alert(`Thank you for reporting this issue. It will be reviewed by our team.`)
-    } catch (error) {
-      console.error('Error flagging amenity:', error)
-      alert('Sorry, there was an error submitting your report. Please try again.')
+    if (confirm(`Report "${name}" as incorrect or problematic?`)) {
+      try {
+        await gpxFinder.flagAmenity(amenityId, type)
+        alert(`Thank you for your report! This helps improve the data quality.`)
+      } catch (error) {
+        console.error('Error flagging amenity:', error)
+        alert('Sorry, there was an error submitting your report. Please try again.')
+      }
     }
   }
 
@@ -199,17 +178,6 @@ function App() {
     }
   }
 
-  const toggleEditMode = () => {
-    const newMode = editMode === 'edit' ? null : 'edit'
-    setEditMode(newMode)
-    if (newMode === 'edit') {
-      setShowSuggestionForm(false)
-      setTempMarkerPosition(null)
-      alert('Edit mode activated. Click on any marker to edit its information.')
-    } else {
-      alert('Edit mode deactivated.')
-    }
-  }
 
   const closeSuggestionForm = () => {
     setShowSuggestionForm(false)
@@ -232,7 +200,7 @@ function App() {
       description: formData.description,
       type: formData.type,
       userSuggestion: true,
-      distanceToRoute: gpxFinder.getMinDistanceToRoute ? 
+      distanceToRoute: gpxFinder.getMinDistanceToRoute ?
         gpxFinder.getMinDistanceToRoute(tempMarkerPosition.lat, tempMarkerPosition.lng) : 0
     }
 
@@ -243,8 +211,8 @@ function App() {
       // Submit new suggestion to Supabase
       try {
         const result = await gpxFinder.submitSuggestion(suggestion)
-        alert(`Thank you! Your suggestion "${suggestion.name}" has been submitted for review.`)
-        
+        alert(`Thank you! Your suggestion "${suggestion.name}" has been submitted.`)
+
         // Add to local state for immediate UI feedback (as pending)
         const newSuggestions = {
           ...userSuggestions,
@@ -272,7 +240,7 @@ function App() {
 
   return (
     <div className="app">
-      <MapView 
+      <MapView
         routeCoords={routeCoords}
         amenities={amenities}
         userSuggestions={userSuggestions}
@@ -282,14 +250,14 @@ function App() {
         onEditSpot={handleEditSpot}
         onDeleteSuggestion={deleteUserSuggestion}
         onFlagSpot={handleFlagSpot}
+        gpxFinder={gpxFinder}
       />
-      
+
       <Controls
         visibleLayers={visibleLayers}
-        onToggleLayer={(layer) => setVisibleLayers(prev => ({...prev, [layer]: !prev[layer]}))}
+        onToggleLayer={(layer) => setVisibleLayers(prev => ({ ...prev, [layer]: !prev[layer] }))}
         editMode={editMode}
         onToggleSuggestMode={toggleSuggestMode}
-        onToggleEditMode={toggleEditMode}
       />
 
       {showSuggestionForm && (

@@ -14,7 +14,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: markerShadow,
 })
 
-const colors = {
+export const colors = {
   toilets: '#e74c3c',
   cafes: '#f39c12',
   indoor: '#3498db',
@@ -30,8 +30,9 @@ function MapClickHandler({ onMapClick }) {
   return null
 }
 
-function AmenityMarker({ amenity, type, onEditSpot, onDeleteSuggestion, onFlagSpot }) {
+function AmenityMarker({ amenity, type, onEditSpot, onDeleteSuggestion, onFlagSpot, gpxFinder }) {
   const distance = amenity.distanceToRoute ? Math.round(amenity.distanceToRoute) : '~50'
+  const distanceToFinish = gpxFinder ? Math.round(gpxFinder.getDistanceToFinish(amenity.lat, amenity.lng)) : null
 
   return (
     <CircleMarker
@@ -53,6 +54,10 @@ function AmenityMarker({ amenity, type, onEditSpot, onDeleteSuggestion, onFlagSp
           <br />
           Distance from route: {distance}m
           <br />
+          {distanceToFinish !== null && (
+            <>Distance to finish: {(distanceToFinish / 1000).toFixed(1)}km<br /></>
+          )}
+          
           {amenity.tags?.opening_hours && (
             <>Hours: {amenity.tags.opening_hours}<br /></>
           )}
@@ -129,7 +134,8 @@ function MapView({
   onMapClick,
   onEditSpot,
   onDeleteSuggestion,
-  onFlagSpot
+  onFlagSpot,
+  gpxFinder
 }) {
   const mapRef = useRef()
 
@@ -180,6 +186,7 @@ function MapView({
             onEditSpot={onEditSpot}
             onDeleteSuggestion={onDeleteSuggestion}
             onFlagSpot={onFlagSpot}
+            gpxFinder={gpxFinder}
           />
         ))
       )}
@@ -194,6 +201,7 @@ function MapView({
             onEditSpot={onEditSpot}
             onDeleteSuggestion={onDeleteSuggestion}
             onFlagSpot={onFlagSpot}
+            gpxFinder={gpxFinder}
           />
         ))
       )}

@@ -1,9 +1,17 @@
--- Metroranta Supabase Schema
--- Run this in your Supabase SQL Editor
+-- Migration: Initial schema setup
+-- Date: 2025-01-08
+-- Description: Create all tables, indexes, functions, and policies for Metroranta
 
 -- Enable required extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "postgis";
+
+-- Create migration log table first (for tracking migrations)
+CREATE TABLE IF NOT EXISTS public.migration_log (
+    id SERIAL PRIMARY KEY,
+    migration_name VARCHAR(255) UNIQUE NOT NULL,
+    applied_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
 
 -- Table for caching Overpass API amenities
 CREATE TABLE cached_amenities (
@@ -204,3 +212,7 @@ GRANT SELECT ON user_flagged_amenities TO anon, authenticated;
 GRANT INSERT ON user_flagged_amenities TO anon, authenticated;
 GRANT SELECT ON fresh_cached_amenities TO anon, authenticated;
 GRANT SELECT ON active_amenities TO anon, authenticated;
+
+-- Log this migration
+INSERT INTO public.migration_log (migration_name, applied_at) 
+VALUES ('000_initial_schema', CURRENT_TIMESTAMP);

@@ -61,44 +61,50 @@ class SupabaseGPXAmenityFinder {
 
         for (const type of types) {
             try {
-                console.log(`Looking for ${type}...`)
+                console.log(`\n🔍 Looking for ${type}...`)
                 
-                // First, try to get cached amenities from Supabase
-                let cachedAmenities = await this.getCachedAmenities(bounds, type)
+                // Step 1: Try to get cached amenities from Supabase
+                let amenitiesFromCache = await this.getCachedAmenities(bounds, type)
                 
-                if (cachedAmenities && cachedAmenities.length > 0) {
-                    console.log(`Found ${cachedAmenities.length} cached ${type}`)
-                    results[type] = cachedAmenities
+                if (amenitiesFromCache && amenitiesFromCache.length > 0) {
+                    console.log(`✅ Using ${amenitiesFromCache.length} cached ${type}`)
+                    results[type] = amenitiesFromCache
                 } else {
-                    // Cache miss or stale, fetch from Overpass API
-                    console.log(`Cache miss for ${type}, fetching from Overpass API...`)
+                    // Step 2: No cache, fetch fresh from Overpass API
+                    console.log(`🌐 Fetching fresh ${type} from Overpass API...`)
                     const freshAmenities = await this.fetchFromOverpassAPI(bounds, type, maxDistance)
                     
-                    // Cache the results in Supabase for next time
-                    if (this.supabase) {
+                    // Step 3: Cache the fresh results in Supabase for next time
+                    if (this.supabase && freshAmenities.length > 0) {
+                        console.log(`💾 Caching ${freshAmenities.length} fresh ${type} amenities...`)
                         await this.cacheAmenities(bounds, type, freshAmenities)
                     }
                     
                     results[type] = freshAmenities
                 }
 
-                // Add approved user-suggested amenities from Supabase
+                // Step 4: Add approved user-suggested amenities
                 if (this.supabase) {
                     const userSuggested = await this.getUserSuggestedAmenities(bounds, type)
-                    const filteredUserSuggested = userSuggested.map(suggestion => ({
-                        ...suggestion,
-                        lat: suggestion.latitude,
-                        lng: suggestion.longitude,
-                        userSuggestion: true,
-                        distanceToRoute: this.getMinDistanceToRoute(suggestion.latitude, suggestion.longitude)
-                    }))
-                    .filter(item => item.distanceToRoute <= maxDistance)
+                    if (userSuggested.length > 0) {
+                        console.log(`➕ Adding ${userSuggested.length} user-suggested ${type}`)
+                        const filteredUserSuggested = userSuggested.map(suggestion => ({
+                            ...suggestion,
+                            lat: suggestion.latitude,
+                            lng: suggestion.longitude,
+                            userSuggestion: true,
+                            distanceToRoute: this.getMinDistanceToRoute(suggestion.latitude, suggestion.longitude)
+                        }))
+                        .filter(item => item.distanceToRoute <= maxDistance)
 
-                    results[type] = [...results[type], ...filteredUserSuggested]
+                        results[type] = [...results[type], ...filteredUserSuggested]
+                    }
                 }
+
+                console.log(`📊 Total ${type}: ${results[type].length}`)
                 
             } catch (error) {
-                console.error(`Error finding ${type}:`, error)
+                console.error(`❌ Error finding ${type}:`, error)
                 results[type] = []
             }
         }
@@ -107,15 +113,13 @@ class SupabaseGPXAmenityFinder {
         return results
     }
 
-    // Get cached amenities from Supabase
+    // Get cached amenities from Supabase (simplified - always check cache)
     async getCachedAmenities(bounds, type) {
         if (!this.supabase) return []
 
         try {
-            // Check if cache is stale first
-            const isStale = await this.isCacheStale(bounds, type)
-            if (isStale) return []
-
+            console.log(`Checking for cached ${type} in database...`)
+            
             const { data, error } = await this.supabase
                 .from('cached_amenities')
                 .select('*')
@@ -124,21 +128,27 @@ class SupabaseGPXAmenityFinder {
                 .lte('latitude', bounds.north)
                 .gte('longitude', bounds.west)
                 .lte('longitude', bounds.east)
-                .gte('cached_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+                .gte('cached_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()) // Only fresh cache (< 24h)
 
             if (error) {
                 console.error('Error fetching cached amenities:', error)
                 return []
             }
 
-            return data.map(amenity => ({
-                id: amenity.external_id,
-                lat: amenity.latitude,
-                lng: amenity.longitude,
-                name: amenity.name,
-                tags: amenity.tags || {},
-                distanceToRoute: amenity.distance_to_route || 0
-            }))
+            if (data && data.length > 0) {
+                console.log(`Found ${data.length} cached ${type} amenities`)
+                return data.map(amenity => ({
+                    id: amenity.external_id,
+                    lat: amenity.latitude,
+                    lng: amenity.longitude,
+                    name: amenity.name,
+                    tags: amenity.tags || {},
+                    distanceToRoute: amenity.distance_to_route || 0
+                }))
+            } else {
+                console.log(`No fresh cached ${type} found in database`)
+                return []
+            }
 
         } catch (error) {
             console.error('Error in getCachedAmenities:', error)
@@ -159,7 +169,7 @@ class SupabaseGPXAmenityFinder {
                 latitude: amenity.lat,
                 longitude: amenity.lng,
                 tags: amenity.tags || {},
-                distance_to_route: amenity.distanceToRoute
+                distance_to_route: Math.round(amenity.distanceToRoute * 10) / 10 // Round to 1 decimal place
             }))
 
             // Insert amenities (using upsert to handle duplicates)
@@ -175,52 +185,44 @@ class SupabaseGPXAmenityFinder {
                 return
             }
 
-            // Update cache metadata
-            const { error: metadataError } = await this.supabase
-                .from('cache_metadata')
-                .upsert({
-                    area_bounds: bounds,
-                    amenity_type: type,
-                    last_fetched_at: new Date().toISOString(),
-                    amenity_count: amenities.length
-                }, { 
-                    onConflict: 'area_bounds,amenity_type'
-                })
-
-            if (metadataError) {
-                console.error('Error updating cache metadata:', metadataError)
-            } else {
-                console.log(`Successfully cached ${amenities.length} ${type}`)
-            }
+            // Skip cache metadata for now (simplified)
+            // TODO: Implement proper cache metadata after DB migration
+            console.log(`Successfully cached ${amenities.length} ${type} (metadata update skipped)`)
 
         } catch (error) {
             console.error('Error in cacheAmenities:', error)
         }
     }
 
-    // Check if cache is stale
+    // Generate consistent hash for bounds
+    generateBoundsHash(bounds) {
+        // Create a consistent string representation of bounds for hashing
+        const boundsString = JSON.stringify({
+            north: bounds.north,
+            south: bounds.south, 
+            east: bounds.east,
+            west: bounds.west
+        })
+        
+        // Simple hash function (for client-side use)
+        let hash = 0
+        for (let i = 0; i < boundsString.length; i++) {
+            const char = boundsString.charCodeAt(i)
+            hash = ((hash << 5) - hash) + char
+            hash = hash & hash // Convert to 32-bit integer
+        }
+        return hash.toString(16)
+    }
+
+    // Check if cache is stale (simplified version - always return true for now)
     async isCacheStale(bounds, type) {
         if (!this.supabase) return true
 
-        try {
-            const { data, error } = await this.supabase
-                .from('cache_metadata')
-                .select('last_fetched_at')
-                .eq('area_bounds', bounds)
-                .eq('amenity_type', type)
-                .single()
-
-            if (error || !data) return true
-
-            const lastFetch = new Date(data.last_fetched_at)
-            const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
-            
-            return lastFetch < twentyFourHoursAgo
-
-        } catch (error) {
-            console.error('Error checking cache staleness:', error)
-            return true // Assume stale on error
-        }
+        // For now, always return true to skip cache staleness check
+        // This ensures fresh data is always fetched from Overpass API
+        // TODO: Implement proper cache staleness check after DB migration
+        console.log(`Skipping cache staleness check for ${type} (always fetching fresh data)`)
+        return true
     }
 
     // Get user-suggested amenities from Supabase (all statuses for user feedback)
@@ -235,6 +237,7 @@ class SupabaseGPXAmenityFinder {
                 .lte('latitude', bounds.north)
                 .gte('longitude', bounds.west)
                 .lte('longitude', bounds.east)
+                .is('archived_at', null)  // Filter out archived items
 
             if (type) {
                 query = query.eq('type', type)
@@ -264,6 +267,7 @@ class SupabaseGPXAmenityFinder {
                 .from('user_suggested_amenities')
                 .select('*')
                 .in('status', ['approved', 'pending']) // Show approved and pending
+                .is('archived_at', null)  // Filter out archived items
 
             if (error) {
                 console.error('Error fetching all user suggestions:', error)
@@ -306,8 +310,9 @@ class SupabaseGPXAmenityFinder {
                     description: suggestion.description || null,
                     latitude: suggestion.lat,
                     longitude: suggestion.lng,
-                    distance_to_route: suggestion.distanceToRoute,
+                    distance_to_route: Math.round(suggestion.distanceToRoute * 10) / 10,
                     user_agent: navigator.userAgent
+                    // Note: user_ip_address will be set automatically by database trigger
                 })
                 .select()
 
@@ -315,6 +320,7 @@ class SupabaseGPXAmenityFinder {
                 throw error
             }
 
+            console.log('✅ Suggestion submitted successfully:', data[0])
             return data[0]
 
         } catch (error) {
@@ -323,52 +329,54 @@ class SupabaseGPXAmenityFinder {
         }
     }
 
-    // Delete user suggestion from Supabase
+    // Archive (soft delete) user suggestion from Supabase
     async deleteUserSuggestion(id) {
         if (!this.supabase) {
             throw new Error('Supabase not configured')
         }
 
         try {
-            const { error } = await this.supabase
-                .from('user_suggested_amenities')
-                .delete()
-                .eq('id', id)
+            // Use the database function for secure archival
+            const { data, error } = await this.supabase
+                .rpc('archive_user_suggestion', { suggestion_id: id })
 
             if (error) {
                 throw error
             }
 
-            return true
+            if (data) {
+                console.log('✅ Suggestion archived successfully')
+                return true
+            } else {
+                throw new Error('Failed to archive suggestion (may not exist or already archived)')
+            }
 
         } catch (error) {
-            console.error('Error deleting suggestion:', error)
+            console.error('Error archiving suggestion:', error)
             throw error
         }
     }
 
-    // Flag amenity in Supabase
-    async flagAmenity(amenityId, flagType, reason = '') {
+    // Flag amenity in Supabase (simplified)
+    async flagAmenity(amenityId, amenityType) {
         if (!this.supabase) {
             throw new Error('Supabase not configured')
         }
 
         try {
+            // Use database function to handle flagging and auto-archival
             const { data, error } = await this.supabase
-                .from('user_flagged_amenities')
-                .insert({
-                    external_amenity_id: amenityId,
-                    flag_type: flagType,
-                    flag_reason: reason || null,
-                    user_agent: navigator.userAgent
+                .rpc('flag_amenity_and_check_threshold', {
+                    amenity_id: amenityId,
+                    amenity_type: amenityType
                 })
-                .select()
 
             if (error) {
                 throw error
             }
 
-            return data[0]
+            console.log('✅ Flag submitted successfully')
+            return data
 
         } catch (error) {
             console.error('Error flagging amenity:', error)
@@ -432,6 +440,44 @@ class SupabaseGPXAmenityFinder {
         }
         
         return minDistance
+    }
+
+    // Find closest route point and its index
+    getClosestRoutePoint(lat, lng) {
+        let minDistance = Infinity
+        let closestIndex = 0
+        
+        for (let i = 0; i < this.routeCoords.length; i++) {
+            const routePoint = this.routeCoords[i]
+            const distance = this.calculateDistance(lat, lng, routePoint[0], routePoint[1])
+            if (distance < minDistance) {
+                minDistance = distance
+                closestIndex = i
+            }
+        }
+        
+        return { index: closestIndex, distance: minDistance }
+    }
+
+    // Calculate route-following distance to finish line from a point
+    getDistanceToFinish(lat, lng) {
+        if (this.routeCoords.length === 0) return 0
+        
+        // Find closest point on route
+        const { index: closestIndex } = this.getClosestRoutePoint(lat, lng)
+        
+        // Calculate remaining distance along route from closest point to finish
+        let remainingDistance = 0
+        for (let i = closestIndex; i < this.routeCoords.length - 1; i++) {
+            const currentPoint = this.routeCoords[i]
+            const nextPoint = this.routeCoords[i + 1]
+            remainingDistance += this.calculateDistance(
+                currentPoint[0], currentPoint[1], 
+                nextPoint[0], nextPoint[1]
+            )
+        }
+        
+        return remainingDistance
     }
 
     // Calculate distance between two points in meters
