@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HEL Metroranta 50K - Route Amenities</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+        #map {
+            height: 100vh;
+            width: 100%;
+        }
+        .controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            z-index: 1000;
+            max-width: 250px;
+        }
+        .control-group {
+            margin-bottom: 10px;
+        }
+        .control-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .legend {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #ddd;
+        }
+        .edit-controls {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #ddd;
+        }
+        .edit-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 2px;
+            font-size: 12px;
+        }
+        .edit-btn:hover {
+            background: #2980b9;
+        }
+        .edit-btn.active {
+            background: #e74c3c;
+        }
+        .suggestion-form {
+            position: absolute;
+            top: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.3);
+            z-index: 1002;
+            min-width: 300px;
+            display: none;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .form-group textarea {
+            height: 60px;
+            resize: vertical;
+        }
+        .form-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        .form-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .form-btn.primary {
+            background: #2ecc71;
+            color: white;
+        }
+        .form-btn.secondary {
+            background: #95a5a6;
+            color: white;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 5px;
+        }
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            z-index: 1001;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading" class="loading">Loading route and amenities...</div>
+    <div id="map"></div>
+    <div class="controls">
+        <div class="control-group">
+            <label>Show Amenities:</label>
+            <div class="checkbox-group">
+                <div class="checkbox-item">
+                    <input type="checkbox" id="show-toilets" checked>
+                    <label for="show-toilets">Bathrooms</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="show-cafes" checked>
+                    <label for="show-cafes">Cafes</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="show-indoor" checked>
+                    <label for="show-indoor">Indoor Spots</label>
+                </div>
+            </div>
+        </div>
+        <div class="legend">
+            <strong>Legend:</strong>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #e74c3c;"></div>
+                <span>Bathrooms</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #f39c12;"></div>
+                <span>Cafes</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #3498db;"></div>
+                <span>Indoor Spots</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #2ecc71;"></div>
+                <span>Your Route</span>
+            </div>
+        </div>
+        <div class="edit-controls">
+            <strong>Edit Mode:</strong>
+            <button class="edit-btn" id="suggest-mode">Suggest New Spot</button>
+            <button class="edit-btn" id="edit-mode">Edit Existing</button>
+        </div>
+    </div>
+
+    <!-- Suggestion Form Modal -->
+    <div id="suggestion-form" class="suggestion-form">
+        <h3>Suggest New Spot</h3>
+        <div class="form-group">
+            <label for="spot-type">Type:</label>
+            <select id="spot-type">
+                <option value="toilets">Bathroom</option>
+                <option value="cafes">Cafe</option>
+                <option value="indoor">Indoor Spot</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="spot-name">Name:</label>
+            <input type="text" id="spot-name" placeholder="Enter spot name">
+        </div>
+        <div class="form-group">
+            <label for="spot-description">Description (optional):</label>
+            <textarea id="spot-description" placeholder="Additional details..."></textarea>
+        </div>
+        <div class="form-group">
+            <label>Location: Click on the map to set location</label>
+            <small id="location-info">No location selected</small>
+        </div>
+        <div class="form-buttons">
+            <button class="form-btn secondary" id="cancel-suggestion">Cancel</button>
+            <button class="form-btn primary" id="submit-suggestion">Submit Suggestion</button>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="gpx-parser.js"></script>
+    <script>
+        // Initialize map
+        const map = L.map('map').setView([60.1699, 24.9384], 13);
+        
+        // Add tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Store markers and route
+        let markers = {
+            toilets: L.layerGroup(),
+            cafes: L.layerGroup(),
+            indoor: L.layerGroup()
+        };
+        let userSuggestions = {
+            toilets: L.layerGroup(),
+            cafes: L.layerGroup(),
+            indoor: L.layerGroup()
+        };
+        let routeLine = null;
+        let gpxFinder = new GPXAmenityFinder();
+        let editMode = null;
+        let tempMarker = null;
+        let selectedSpot = null;
+
+        // Load and parse GPX data
+        async function loadGPXData() {
+            try {
+                // Load full route coordinates from JSON file
+                const routeCoords = await loadRouteData();
+                console.log(`Loaded ${routeCoords.length} route points`);
+
+                // Set route coordinates in GPX finder for amenity search
+                gpxFinder.routeCoords = routeCoords;
+
+                // Draw route
+                routeLine = L.polyline(routeCoords, {
+                    color: '#2ecc71',
+                    weight: 3,
+                    opacity: 0.8
+                }).addTo(map);
+
+                // Fit map to route
+                map.fitBounds(routeLine.getBounds());
+
+                // Find real amenities near route using Overpass API
+                await findRealAmenities();
+                
+            } catch (error) {
+                console.error('Error loading route data:', error);
+                document.getElementById('loading').innerHTML = 'Error loading route data. Using sample data...';
+                
+                // Fallback to sample data
+                await loadSampleData();
+            }
+        }
+
+        // Load route data from JSON file
+        async function loadRouteData() {
+            try {
+                const response = await fetch('route-data.json');
+                const data = await response.json();
+                return data.route;
+            } catch (error) {
+                console.error('Error loading route data:', error);
+                throw error;
+            }
+        }
+
+        // Find real amenities using Overpass API
+        async function findRealAmenities() {
+            try {
+                document.getElementById('loading').innerHTML = 'Finding nearby amenities...';
+                const amenities = await gpxFinder.findAmenities(100);
+
+                // Add markers for each type
+                addMarkers('toilets', amenities.toilets, '#e74c3c');
+                addMarkers('cafes', amenities.cafes, '#f39c12');
+                addMarkers('indoor', amenities.indoor, '#3498db');
+
+                // Add all marker groups to map
+                Object.values(markers).forEach(group => group.addTo(map));
+                Object.values(userSuggestions).forEach(group => group.addTo(map));
+
+                const totalFound = amenities.toilets.length + amenities.cafes.length + amenities.indoor.length;
+                console.log(`Total amenities found: ${totalFound}`);
+                
+                document.getElementById('loading').style.display = 'none';
+                
+            } catch (error) {
+                console.error('Error finding amenities:', error);
+                // Fallback to sample data
+                await loadSampleData();
+            }
+        }
+
+        // Sample data fallback
+        async function loadSampleData() {
+            const sampleAmenities = {
+                toilets: [
+                    {lat: 60.1699, lng: 24.9384, name: "Central Station Toilets", distanceToRoute: 50},
+                    {lat: 60.1580, lng: 24.9506, name: "Market Square Public Toilets", distanceToRoute: 80},
+                    {lat: 60.1674, lng: 24.9515, name: "Esplanade Park Toilets", distanceToRoute: 30}
+                ],
+                cafes: [
+                    {lat: 60.1682, lng: 24.9355, name: "Stockmann Café", distanceToRoute: 60},
+                    {lat: 60.1625, lng: 24.9444, name: "Café Aalto", distanceToRoute: 40},
+                    {lat: 60.1612, lng: 24.9502, name: "Old Market Hall Café", distanceToRoute: 90}
+                ],
+                indoor: [
+                    {lat: 60.1699, lng: 24.9384, name: "Helsinki Central Station", distanceToRoute: 25},
+                    {lat: 60.1641, lng: 24.9402, name: "Stockmann Department Store", distanceToRoute: 70},
+                    {lat: 60.1595, lng: 24.9525, name: "City Hall", distanceToRoute: 45}
+                ]
+            };
+
+            // Add markers
+            addMarkers('toilets', sampleAmenities.toilets, '#e74c3c');
+            addMarkers('cafes', sampleAmenities.cafes, '#f39c12');
+            addMarkers('indoor', sampleAmenities.indoor, '#3498db');
+
+            // Add all marker groups to map
+            Object.values(markers).forEach(group => group.addTo(map));
+            Object.values(userSuggestions).forEach(group => group.addTo(map));
+
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function addMarkers(type, amenities, color) {
+            amenities.forEach(amenity => {
+                const marker = L.circleMarker([amenity.lat, amenity.lng], {
+                    radius: 8,
+                    color: 'white',
+                    weight: 2,
+                    fillColor: color,
+                    fillOpacity: 0.8
+                });
+                
+                const distance = amenity.distanceToRoute ? Math.round(amenity.distanceToRoute) : '~50';
+                
+                marker.bindPopup(`
+                    <strong>${amenity.name}</strong><br>
+                    Type: ${type.charAt(0).toUpperCase() + type.slice(1)}<br>
+                    Distance from route: ${distance}m<br>
+                    ${amenity.tags?.opening_hours ? `Hours: ${amenity.tags.opening_hours}<br>` : ''}
+                    ${amenity.tags?.website ? `<a href="${amenity.tags.website}" target="_blank">Website</a><br>` : ''}
+                    <button onclick="editSpot('${amenity.id || Date.now()}', '${type}', '${amenity.name}', ${amenity.lat}, ${amenity.lng})" style="background:#f39c12;color:white;border:none;padding:4px 8px;border-radius:3px;cursor:pointer;margin-top:5px;">Edit Info</button>
+                `);
+                
+                markers[type].addLayer(marker);
+            });
+        }
+
+        // Control event listeners
+        document.getElementById('show-toilets').addEventListener('change', (e) => {
+            if (e.target.checked) {
+                map.addLayer(markers.toilets);
+            } else {
+                map.removeLayer(markers.toilets);
+            }
+        });
+
+        document.getElementById('show-cafes').addEventListener('change', (e) => {
+            if (e.target.checked) {
+                map.addLayer(markers.cafes);
+            } else {
+                map.removeLayer(markers.cafes);
+            }
+        });
+
+        document.getElementById('show-indoor').addEventListener('change', (e) => {
+            if (e.target.checked) {
+                map.addLayer(markers.indoor);
+            } else {
+                map.removeLayer(markers.indoor);
+            }
+        });
+
+        // Edit mode functionality
+        let isEditModeActive = false;
+        
+        // Edit mode button handlers
+        document.getElementById('suggest-mode').addEventListener('click', () => {
+            toggleSuggestMode();
+        });
+        
+        document.getElementById('edit-mode').addEventListener('click', () => {
+            toggleEditMode();
+        });
+        
+        function toggleSuggestMode() {
+            const btn = document.getElementById('suggest-mode');
+            const form = document.getElementById('suggestion-form');
+            
+            if (btn.classList.contains('active')) {
+                // Deactivate suggest mode
+                btn.classList.remove('active');
+                form.style.display = 'none';
+                map.off('click', handleMapClick);
+                if (tempMarker) {
+                    map.removeLayer(tempMarker);
+                    tempMarker = null;
+                }
+            } else {
+                // Activate suggest mode
+                btn.classList.add('active');
+                form.style.display = 'block';
+                map.on('click', handleMapClick);
+                
+                // Deactivate edit mode if active
+                const editBtn = document.getElementById('edit-mode');
+                editBtn.classList.remove('active');
+            }
+        }
+        
+        function toggleEditMode() {
+            const btn = document.getElementById('edit-mode');
+            
+            if (btn.classList.contains('active')) {
+                btn.classList.remove('active');
+                alert('Edit mode deactivated. Click on markers to edit them.');
+            } else {
+                btn.classList.add('active');
+                alert('Edit mode activated. Click on any marker to edit its information.');
+                
+                // Deactivate suggest mode if active
+                const suggestBtn = document.getElementById('suggest-mode');
+                suggestBtn.classList.remove('active');
+                document.getElementById('suggestion-form').style.display = 'none';
+            }
+        }
+        
+        function handleMapClick(e) {
+            const { lat, lng } = e.latlng;
+            
+            // Remove existing temp marker
+            if (tempMarker) {
+                map.removeLayer(tempMarker);
+            }
+            
+            // Add temporary marker
+            tempMarker = L.marker([lat, lng], {
+                icon: L.divIcon({
+                    className: 'temp-marker',
+                    html: '📍',
+                    iconSize: [20, 20]
+                })
+            }).addTo(map);
+            
+            // Update location info
+            document.getElementById('location-info').textContent = 
+                `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`;
+        }
+        
+        function editSpot(id, type, name, lat, lng) {
+            selectedSpot = { id, type, name, lat, lng };
+            
+            // Pre-fill form with existing data
+            document.getElementById('spot-type').value = type;
+            document.getElementById('spot-name').value = name;
+            document.getElementById('spot-description').value = '';
+            document.getElementById('location-info').textContent = 
+                `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`;
+            
+            // Show form
+            const form = document.getElementById('suggestion-form');
+            form.querySelector('h3').textContent = 'Edit Spot Information';
+            form.style.display = 'block';
+            
+            // Add temp marker at current location
+            if (tempMarker) map.removeLayer(tempMarker);
+            tempMarker = L.marker([lat, lng], {
+                icon: L.divIcon({
+                    className: 'temp-marker',
+                    html: '✏️',
+                    iconSize: [20, 20]
+                })
+            }).addTo(map);
+        }
+        
+        // Form handlers
+        document.getElementById('cancel-suggestion').addEventListener('click', () => {
+            closeSuggestionForm();
+        });
+        
+        document.getElementById('submit-suggestion').addEventListener('click', () => {
+            submitSuggestion();
+        });
+        
+        function closeSuggestionForm() {
+            document.getElementById('suggestion-form').style.display = 'none';
+            document.getElementById('suggest-mode').classList.remove('active');
+            document.getElementById('spot-name').value = '';
+            document.getElementById('spot-description').value = '';
+            document.getElementById('location-info').textContent = 'No location selected';
+            
+            if (tempMarker) {
+                map.removeLayer(tempMarker);
+                tempMarker = null;
+            }
+            
+            map.off('click', handleMapClick);
+            selectedSpot = null;
+        }
+        
+        function submitSuggestion() {
+            const name = document.getElementById('spot-name').value.trim();
+            const type = document.getElementById('spot-type').value;
+            const description = document.getElementById('spot-description').value.trim();
+            
+            if (!name) {
+                alert('Please enter a name for the spot.');
+                return;
+            }
+            
+            if (!tempMarker) {
+                alert('Please click on the map to select a location.');
+                return;
+            }
+            
+            const latLng = tempMarker.getLatLng();
+            
+            // Create user suggestion
+            const suggestion = {
+                id: selectedSpot ? selectedSpot.id : Date.now(),
+                name: name,
+                lat: latLng.lat,
+                lng: latLng.lng,
+                description: description,
+                type: type,
+                userSuggestion: true,
+                distanceToRoute: gpxFinder.getMinDistanceToRoute ? 
+                    gpxFinder.getMinDistanceToRoute(latLng.lat, latLng.lng) : 0
+            };
+            
+            if (selectedSpot) {
+                // Update existing suggestion
+                updateSpotInfo(suggestion);
+            } else {
+                // Add new suggestion
+                addUserSuggestion(suggestion);
+            }
+            
+            closeSuggestionForm();
+            
+            // Save to localStorage for persistence
+            saveUserSuggestions();
+        }
+        
+        function addUserSuggestion(suggestion) {
+            const colors = {
+                toilets: '#e74c3c',
+                cafes: '#f39c12', 
+                indoor: '#3498db'
+            };
+            
+            const marker = L.circleMarker([suggestion.lat, suggestion.lng], {
+                radius: 10,
+                color: 'white',
+                weight: 3,
+                fillColor: colors[suggestion.type],
+                fillOpacity: 0.9
+            });
+            
+            marker.bindPopup(`
+                <strong>${suggestion.name}</strong> <span style="color:#e74c3c;">(User Suggestion)</span><br>
+                Type: ${suggestion.type.charAt(0).toUpperCase() + suggestion.type.slice(1)}<br>
+                Distance from route: ${Math.round(suggestion.distanceToRoute)}m<br>
+                ${suggestion.description ? `Description: ${suggestion.description}<br>` : ''}
+                <button onclick="editSpot('${suggestion.id}', '${suggestion.type}', '${suggestion.name}', ${suggestion.lat}, ${suggestion.lng})" style="background:#f39c12;color:white;border:none;padding:4px 8px;border-radius:3px;cursor:pointer;margin-top:5px;">Edit</button>
+                <button onclick="deleteUserSuggestion('${suggestion.id}', '${suggestion.type}')" style="background:#e74c3c;color:white;border:none;padding:4px 8px;border-radius:3px;cursor:pointer;margin-top:5px;margin-left:5px;">Delete</button>
+            `);
+            
+            userSuggestions[suggestion.type].addLayer(marker);
+            
+            console.log(`Added user suggestion: ${suggestion.name}`);
+        }
+        
+        function updateSpotInfo(suggestion) {
+            console.log(`Updated spot: ${suggestion.name}`);
+            alert(`Spot "${suggestion.name}" information updated!`);
+        }
+        
+        function deleteUserSuggestion(id, type) {
+            if (confirm('Are you sure you want to delete this suggestion?')) {
+                // Find and remove the marker
+                userSuggestions[type].eachLayer(layer => {
+                    const popup = layer.getPopup();
+                    if (popup && popup.getContent().includes(id)) {
+                        userSuggestions[type].removeLayer(layer);
+                    }
+                });
+                
+                saveUserSuggestions();
+                console.log(`Deleted user suggestion: ${id}`);
+            }
+        }
+        
+        function saveUserSuggestions() {
+            // In a real app, this would save to a backend
+            // For now, just save to localStorage
+            const suggestions = [];
+            Object.keys(userSuggestions).forEach(type => {
+                userSuggestions[type].eachLayer(layer => {
+                    const latLng = layer.getLatLng();
+                    suggestions.push({
+                        type: type,
+                        lat: latLng.lat,
+                        lng: latLng.lng,
+                        // Extract data from popup (simplified)
+                    });
+                });
+            });
+            localStorage.setItem('userSuggestions', JSON.stringify(suggestions));
+        }
+        
+        function loadUserSuggestions() {
+            const saved = localStorage.getItem('userSuggestions');
+            if (saved) {
+                try {
+                    const suggestions = JSON.parse(saved);
+                    suggestions.forEach(suggestion => {
+                        addUserSuggestion(suggestion);
+                    });
+                } catch (e) {
+                    console.error('Error loading user suggestions:', e);
+                }
+            }
+        }
+
+        // Initialize
+        loadGPXData().then(() => {
+            loadUserSuggestions();
+        });
+    </script>
+</body>
+</html>
