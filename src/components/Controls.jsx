@@ -52,6 +52,18 @@ function Controls({ visibleLayers, onToggleLayer, editMode, onToggleSuggestMode 
       >
         Suggest New Spot
       </button>
+
+      <div className="shoeme-section">
+        <div className="shoeme-text">Looking for new shoes?</div>
+        <a 
+          href="https://shoeme.fit" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="shoeme-link"
+        >
+          ShoeMe
+        </a>
+      </div>
     </div>
   )
 }

@@ -59,7 +59,7 @@ body {
   border-radius: 4px;
   cursor: pointer;
   margin: 2px;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .edit-btn:hover {
@@ -68,6 +68,36 @@ body {
 
 .edit-btn.active {
   background: #e74c3c;
+}
+
+.shoeme-section {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #ddd;
+  text-align: center;
+}
+
+.shoeme-text {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.shoeme-link {
+  display: inline-block;
+  padding: 6px 12px;
+  background: #34495e;
+  color: white;
+  text-decoration: none;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.shoeme-link:hover {
+  background: #2c3e50;
+  text-decoration: none;
+  color: white;
 }
 
 .suggestion-form {
