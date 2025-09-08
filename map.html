@@ -252,6 +252,7 @@
         // Load and parse GPX data
         async function loadGPXData() {
             try {
+                console.log('Starting to load GPX data...');
                 // Load full route coordinates from JSON file
                 const routeCoords = await loadRouteData();
                 console.log(`Loaded ${routeCoords.length} route points`);
@@ -284,8 +285,14 @@
         // Load route data from JSON file
         async function loadRouteData() {
             try {
+                console.log('Fetching route-data.json...');
                 const response = await fetch('route-data.json');
+                console.log('Response status:', response.status, response.statusText);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
                 const data = await response.json();
+                console.log('JSON parsed successfully, route points:', data.route?.length);
                 return data.route;
             } catch (error) {
                 console.error('Error loading route data:', error);
