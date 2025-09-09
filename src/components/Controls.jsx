@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { colors } from './MapView'
 
 function Controls({ visibleLayers, onToggleLayer, editMode, onToggleSuggestMode }) {
-  const [isCollapsed, setIsCollapsed] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useState(true)
   const legendItems = [
     { type: 'toilets', label: 'Bathrooms', color: colors.toilets },
     { type: 'cafes', label: 'Cafes', color: colors.cafes },
@@ -12,17 +12,6 @@ function Controls({ visibleLayers, onToggleLayer, editMode, onToggleSuggestMode 
 
   return (
     <div className={`controls ${isCollapsed ? 'collapsed' : ''}`}>
-      <div className="controls-header">
-        <span className="controls-title">Controls</span>
-        <button 
-          className="collapse-btn"
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          aria-label={isCollapsed ? 'Expand controls' : 'Collapse controls'}
-        >
-          {isCollapsed ? '▼' : '▲'}
-        </button>
-      </div>
-      
       {!isCollapsed && (
         <div className="controls-content">
           <div className="control-group">
@@ -66,6 +55,19 @@ function Controls({ visibleLayers, onToggleLayer, editMode, onToggleSuggestMode 
           </div>
         </div>
       )}
+
+      <div
+        className="controls-header"
+        onClick={() => setIsCollapsed(!isCollapsed)}
+        aria-label={isCollapsed ? 'Expand controls' : 'Collapse controls'}
+      >
+        <span className="controls-title">Controls</span>
+        <button
+          className="collapse-btn"
+        >
+          {isCollapsed ? '▲' : '▼'}
+        </button>
+      </div>
     </div>
   )
 }

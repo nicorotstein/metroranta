@@ -75,7 +75,7 @@ function App() {
 
   const findRealAmenities = async () => {
     try {
-      setLoadingText('Finding nearby amenities...')
+      setLoadingText('Loading Metroranta...')
       const foundAmenities = await gpxFinder.findAmenities(100)
       setAmenities(foundAmenities)
 
@@ -160,7 +160,7 @@ function App() {
     if (confirm(`Report "${name}" as incorrect or problematic?`)) {
       try {
         const result = await gpxFinder.flagAmenity(amenityId, type)
-        
+
         // Check if the amenity was archived due to reaching threshold
         if (result && result.amenity_archived) {
           // Remove the flagged amenity from UI immediately
@@ -219,9 +219,9 @@ function App() {
       // Update existing suggestion in database and local state
       try {
         await gpxFinder.updateSuggestion(selectedSpot.id, suggestion)
-        
+
         let updatedSuggestions = { ...userSuggestions }
-        
+
         // Find which type the original suggestion was in
         let originalType = null
         for (const type of ['toilets', 'cafes', 'indoor']) {
@@ -230,20 +230,20 @@ function App() {
             break
           }
         }
-        
+
         if (originalType) {
           // Remove from original type
           updatedSuggestions[originalType] = userSuggestions[originalType].filter(item => item.id !== selectedSpot.id)
-          
+
           // Add to new type (might be the same)
           updatedSuggestions[suggestion.type] = [
-            ...updatedSuggestions[suggestion.type], 
+            ...updatedSuggestions[suggestion.type],
             { ...suggestion, userSuggestion: true }
           ]
-          
+
           setUserSuggestions(updatedSuggestions)
         }
-        
+
         alert(`Spot "${suggestion.name}" information updated successfully!`)
       } catch (error) {
         console.error('Error updating suggestion:', error)
@@ -283,6 +283,20 @@ function App() {
 
   return (
     <div className="app">
+      <header className="app-navbar">
+        <div className="navbar-content">
+          <h1>HEL Metroranta 50K 🗓️ 18 Oct 2025</h1>
+          <div className="header-links">
+            <a href="https://t.me/+U9XvW8AGoNwwNDc0" target="_blank" rel="noopener noreferrer">
+              Join Telegram
+            </a>
+            <a href="https://www.strava.com/routes/3375457343970102656" target="_blank" rel="noopener noreferrer">
+              Strava route
+            </a>
+          </div>
+        </div>
+      </header>
+
       <MapView
         routeCoords={routeCoords}
         amenities={amenities}

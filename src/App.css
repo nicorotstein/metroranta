@@ -1,26 +1,91 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap');
+
 body {
   margin: 0;
   padding: 0;
-  font-family: Arial, sans-serif;
+  font-family: 'Manrope', sans-serif;
+  background: #1a1a1a;
+  color: #c4a3e8;
 }
 
 .app {
   position: relative;
   height: 100vh;
   width: 100%;
+  padding-top: 60px;
+  /* Account for fixed navbar */
+}
+
+.app-navbar {
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: rgba(26, 26, 26, 0.95);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+}
+
+.navbar-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 3rem;
+  position: relative;
+  width: 100%;
+}
+
+.app-navbar h1 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #c4a3e8;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.header-links {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.header-links a {
+  color: #c4a3e8;
+  text-decoration: none;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  border: 1px solid #444;
+  background: rgba(26, 26, 26, 0.8);
+  transition: all 0.2s;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+}
+
+.header-links a:hover {
+  color: #e8a3d3;
+  border-color: #666;
+  background: rgba(68, 68, 68, 0.8);
 }
 
 .controls {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: white;
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #1a1a1a;
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
   z-index: 1000;
   max-width: min(280px, calc(100vw - 40px));
   min-width: 200px;
   transition: all 0.3s ease;
+  border: 1px solid #444;
+  display: flex;
+  flex-direction: column;
 }
 
 .controls.collapsed {
@@ -32,14 +97,14 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 12px 15px;
-  border-bottom: 1px solid #eee;
   cursor: pointer;
+  order: 2;
 }
 
 .controls-title {
   font-weight: bold;
   font-size: clamp(14px, 2.5vw, 16px);
-  color: #333;
+  color: #c4a3e8;
 }
 
 .collapse-btn {
@@ -50,11 +115,11 @@ body {
   padding: 4px 8px;
   border-radius: 3px;
   transition: background-color 0.2s;
-  color: #666;
+  color: #c4a3e8;
 }
 
 .collapse-btn:hover {
-  background: #f0f0f0;
+  background: #333;
 }
 
 .controls-content {
@@ -62,6 +127,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 15px;
+  order: 1;
+  border-bottom: none;
 }
 
 .control-group {
@@ -71,6 +138,7 @@ body {
 .section-title {
   margin-bottom: 8px;
   font-size: clamp(13px, 2.2vw, 15px);
+  color: #c4a3e8;
 }
 
 .checkbox-group {
@@ -94,78 +162,95 @@ body {
   font-weight: 500;
   cursor: pointer;
   user-select: none;
+  color: #c4a3e8;
 }
 
 .legend {
   margin-top: 15px;
   margin-bottom: 15px;
   padding-top: 15px;
-  border-top: 1px solid #ddd;
+  border-top: 1px solid #444;
 }
 
 .edit-controls {
   margin-top: 15px;
   padding-top: 15px;
-  border-top: 1px solid #ddd;
+  border-top: 1px solid #444;
 }
 
 .edit-btn {
-  background: #3498db;
-  color: white;
-  border: none;
-  padding: clamp(6px, 1.5vw, 10px) clamp(8px, 2vw, 14px);
-  border-radius: 4px;
+  background: #c4a3e82e;
+  color: #c4a3e8;
+  border: 1px solid #666;
+  padding: clamp(8px, 2vw, 12px) clamp(12px, 2.5vw, 16px);
+  border-radius: 6px;
   cursor: pointer;
   font-size: clamp(12px, 2.2vw, 14px);
-  font-weight: 500;
+  font-weight: 600;
   transition: all 0.2s;
   width: 100%;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .edit-btn:hover {
-  background: #2980b9;
+  background: #c4a3e85b;
+  border-color: #777;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
+  transform: translateY(-1px);
 }
 
 .edit-btn.active {
-  background: #e74c3c;
+  background: #c4a3e85b;
+  color: #e8a3d3;
+  border-color: #888;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  transform: translateY(1px);
 }
 
 .shoeme-section {
-  padding-top: 12px;
-  border-top: 1px solid #ddd;
+  padding: 12px 0;
+  border-top: 1px solid #444;
+  border-bottom: 1px solid #444;
   text-align: center;
 }
 
 .shoeme-text {
   font-size: clamp(11px, 1.8vw, 13px);
-  color: #666;
+  color: #c4a3e8;
   margin-bottom: 8px;
 }
 
 .shoeme-link {
   display: inline-block;
-  padding: clamp(4px, 1vw, 8px) clamp(8px, 1.5vw, 12px);
-  background: #34495e;
-  color: white;
+  padding: clamp(8px, 2vw, 12px) clamp(12px, 2.5vw, 16px);
+  background: #c4a3e82e;
+  color: #c4a3e8;
   text-decoration: none;
-  border-radius: 4px;
-  font-size: clamp(11px, 1.8vw, 13px);
-  font-weight: 500;
+  border: 1px solid #666;
+  border-radius: 6px;
+  font-size: clamp(12px, 2.2vw, 14px);
+  font-weight: 600;
   transition: all 0.2s;
   width: 100%;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .shoeme-link:hover {
-  background: #2c3e50;
+  background: #c4a3e85b;
   text-decoration: none;
-  color: white;
+  color: #c4a3e8;
+  border-color: #777;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
+  transform: translateY(-1px);
 }
 
 .suggestion-form {
   position: absolute;
   top: 10px;
   left: 10px;
-  background: white;
+  background: #1a1a1a;
   padding: clamp(15px, 3vw, 25px);
   border-radius: 8px;
   box-shadow: 0 2px 15px rgba(0, 0, 0, 0.3);
@@ -179,7 +264,7 @@ body {
   margin-top: 0;
   margin-bottom: clamp(15px, 3vw, 20px);
   font-size: clamp(16px, 3vw, 20px);
-  color: #333;
+  color: #c4a3e8;
 }
 
 .form-group {
@@ -191,6 +276,7 @@ body {
   font-weight: bold;
   margin-bottom: 5px;
   font-size: clamp(13px, 2.2vw, 15px);
+  color: #c4a3e8;
 }
 
 .form-group input,
@@ -198,17 +284,18 @@ body {
 .form-group textarea {
   width: 100%;
   padding: clamp(8px, 1.5vw, 12px);
-  border: 1px solid #ddd;
+  border: 1px solid #444;
   border-radius: 4px;
-  box-sizing: border-box;
   font-size: clamp(14px, 2.5vw, 16px);
   line-height: 1.4;
+  background: #1a1a1a;
+  color: #c4a3e8;
 }
 
 .form-group select {
-  background-color: white;
+  background-color: #1a1a1a;
   cursor: pointer;
-  background-image: linear-gradient(45deg, transparent 50%, gray 50%), linear-gradient(135deg, gray 50%, transparent 50%);
+  background-image: linear-gradient(45deg, transparent 50%, #c4a3e8 50%), linear-gradient(135deg, #c4a3e8 50%, transparent 50%);
   background-position: right 15px center, right 10px center;
   background-size: 5px 5px, 5px 5px;
   background-repeat: no-repeat;
@@ -221,6 +308,8 @@ body {
   font-size: clamp(16px, 2.5vw, 18px);
   padding: clamp(4px, 1vw, 8px);
   line-height: 1.4;
+  background: #1a1a1a;
+  color: #c4a3e8;
 }
 
 .form-group textarea {
@@ -230,7 +319,7 @@ body {
 }
 
 .location-info {
-  color: #666;
+  color: #c4a3e8;
   font-size: clamp(11px, 1.8vw, 13px);
   margin-top: 4px;
 }
@@ -244,22 +333,26 @@ body {
 
 .form-btn {
   padding: clamp(8px, 2vw, 12px) clamp(12px, 3vw, 20px);
-  border: none;
+  border: 1px solid #444;
   border-radius: 4px;
   cursor: pointer;
   font-size: clamp(13px, 2.2vw, 15px);
   font-weight: 500;
   transition: all 0.2s;
+  background: #1a1a1a;
+  color: #c4a3e8;
 }
 
 .form-btn.primary {
-  background: #2ecc71;
-  color: white;
+  background: #444;
+  color: #c4a3e8;
+  border: 1px solid #666;
 }
 
 .form-btn.secondary {
-  background: #95a5a6;
-  color: white;
+  background: #333;
+  color: #c4a3e8;
+  border: 1px solid #555;
 }
 
 .legend-item {
@@ -279,8 +372,13 @@ body {
   position: absolute;
   top: 50%;
   left: 50%;
+  width: 300px;
   transform: translate(-50%, -50%);
-  background: white;
+  background: #1a1a1a;
+  color: #c4a3e8;
+  text-align: center;
+  line-height: 1.5;
+  font-size: 1.2rem;
   padding: 20px;
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
@@ -298,64 +396,153 @@ body {
   /* Make the emoji twice as large */
 }
 
+.start-flag,
+.finish-flag {
+  font-size: 24px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Leaflet Popup Dark Theme */
+.leaflet-popup-content-wrapper {
+  background: #1a1a1a !important;
+  color: #c4a3e8 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5) !important;
+}
+
+.leaflet-popup-content {
+  color: #c4a3e8 !important;
+}
+
+.leaflet-popup-content strong {
+  color: #e8a3d3 !important;
+  font-size: 1.1em !important;
+  display: block !important;
+  border-bottom: 1px solid #444 !important;
+  padding-bottom: 8px !important;
+  margin-bottom: 8px !important;
+}
+
+.leaflet-popup-tip {
+  background: #1a1a1a !important;
+  border: none !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3) !important;
+}
+
+.leaflet-container a.leaflet-popup-close-button {
+  color: #c4a3e8 !important;
+  font-size: 18px !important;
+  font-weight: bold !important;
+  text-decoration: none !important;
+}
+
+.leaflet-container a.leaflet-popup-close-button:hover {
+  color: #e8a3d3 !important;
+}
+
+/* Leaflet Zoom Controls - Move to Bottom Left */
+.leaflet-control-zoom {
+  margin: 0 !important;
+  position: fixed !important;
+  bottom: 20px !important;
+  left: 20px !important;
+  top: auto !important;
+  right: auto !important;
+  z-index: 1000 !important;
+}
+
+.leaflet-control-zoom a {
+  background: rgba(26, 26, 26, 0.9) !important;
+  color: #c4a3e8 !important;
+  border: 1px solid #444 !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background: rgba(68, 68, 68, 0.9) !important;
+  color: #e8a3d3 !important;
+}
+
 /* Mobile responsive styles */
 @media (max-width: 768px) {
+  .app {
+    padding-top: 75px;
+    /* Slightly more padding on mobile */
+  }
+
+  .navbar-content {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: center;
+    padding: 1rem 2rem;
+  }
+
+  .app-navbar h1 {
+    text-align: center;
+    order: 1;
+  }
+
+  .header-links {
+    order: 2;
+  }
+
   .controls {
-    top: 8px;
-    right: 8px;
-    width: calc(50vw - 16px);
-    max-width: 200px;
+    bottom: 15px;
+    right: 15px;
+    max-width: calc(100vw - 30px);
     min-width: 150px;
   }
 
-  .controls.collapsed {
-    width: calc(40vw - 16px);
-    max-width: 160px;
-    min-width: 120px;
-  }
-
-  .controls-header {
-    padding: 8px 10px;
-  }
-
-  .controls-content {
-    padding: 10px;
-    gap: 10px;
+  .header-links {
+    gap: 8px;
   }
 
   .suggestion-form {
-    top: 8px;
+    top: 90px;
     left: 8px;
     right: 8px;
     width: auto;
-    max-height: calc(100vh - 32px);
+    max-height: calc(100vh - 100px);
   }
 
   .form-group select option {
     font-size: 16px;
   }
+
+  .leaflet-control-zoom {
+    bottom: 15px !important;
+    left: 15px !important;
+  }
 }
 
 @media (max-width: 480px) {
+  .app {
+    padding-top: 85px;
+    /* More padding for smaller screens */
+  }
+
+  .navbar-content {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: center;
+    padding: 1rem 2rem;
+  }
+
   .controls {
-    width: calc(45vw - 12px);
-    max-width: 180px;
+    bottom: 10px;
+    right: 10px;
+    max-width: calc(100vw - 20px);
     min-width: 140px;
   }
 
-  .controls.collapsed {
-    width: calc(35vw - 12px);
-    max-width: 140px;
-    min-width: 100px;
+  .controls-content {
+    padding: 10px;
+    gap: 8px;
   }
 
   .controls-header {
-    padding: 6px 8px;
-  }
-
-  .controls-content {
-    padding: 8px;
-    gap: 8px;
+    padding: 8px 12px;
   }
 
   .checkbox-group {

@@ -45,11 +45,11 @@ function AmenityMarker({ amenity, type, onEditSpot, onDeleteSuggestion, onFlagSp
     >
       <Popup>
         <div>
-          <strong>{amenity.name}</strong>
-          {amenity.userSuggestion && (
-            <span style={{ color: 'gray', marginLeft: '5px' }}>(user suggestion)</span>
-          )}
-          <br />
+          <strong>{amenity.name}
+            {amenity.userSuggestion && (
+              <span style={{ color: 'gray', marginLeft: '5px', fontWeight: 'lighter' }}>(user suggestion)</span>
+            )}
+          </strong>
 
           {distanceToFinish !== null && (
             <>Distance to finish: <span style={{ fontWeight: 'bold' }}>{(distanceToFinish / 1000).toFixed(1)}km<br /></span></>
@@ -165,11 +165,15 @@ function MapView({
     ]
     : [60.1699, 24.9384]
 
+  // Mobile detection for zoom level
+  const isMobile = window.innerWidth <= 768
+  const initialZoom = isMobile ? 10 : 11
+
   return (
     <MapContainer
       ref={mapRef}
       center={center}
-      zoom={11} // Much lower initial zoom to show more area
+      zoom={initialZoom} // Responsive zoom: 10 for mobile, 11 for desktop
       style={{ height: '100vh', width: '100%', zIndex: 1 }}
       whenCreated={(mapInstance) => {
         mapRef.current = mapInstance
@@ -199,8 +203,8 @@ function MapView({
           icon={L.divIcon({
             className: 'start-flag',
             html: '🟢',
-            iconSize: [25, 25],
-            iconAnchor: [12, 25]
+            iconSize: [50, 50],
+            iconAnchor: [25, 50]
           })}
         >
           <Popup>
@@ -219,8 +223,8 @@ function MapView({
           icon={L.divIcon({
             className: 'finish-flag',
             html: '🏁',
-            iconSize: [25, 25],
-            iconAnchor: [12, 25]
+            iconSize: [50, 50],
+            iconAnchor: [25, 50]
           })}
         >
           <Popup>
