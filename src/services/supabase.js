@@ -74,13 +74,17 @@ class SupabaseGPXAmenityFinder {
                     console.log(`🌐 Fetching fresh ${type} from Overpass API...`)
                     const freshAmenities = await this.fetchFromOverpassAPI(bounds, type, maxDistance)
                     
+                    // Step 2.5: Filter out heavily flagged amenities
+                    const filteredFreshAmenities = await this.filterHeavilyFlaggedAmenities(freshAmenities, type)
+                    console.log(`🚫 Filtered out ${freshAmenities.length - filteredFreshAmenities.length} heavily flagged ${type}`)
+                    
                     // Step 3: Cache the fresh results in Supabase for next time
-                    if (this.supabase && freshAmenities.length > 0) {
-                        console.log(`💾 Caching ${freshAmenities.length} fresh ${type} amenities...`)
-                        await this.cacheAmenities(bounds, type, freshAmenities)
+                    if (this.supabase && filteredFreshAmenities.length > 0) {
+                        console.log(`💾 Caching ${filteredFreshAmenities.length} fresh ${type} amenities...`)
+                        await this.cacheAmenities(bounds, type, filteredFreshAmenities)
                     }
                     
-                    results[type] = freshAmenities
+                    results[type] = filteredFreshAmenities
                 }
 
                 // Step 4: Add approved user-suggested amenities
@@ -113,22 +117,22 @@ class SupabaseGPXAmenityFinder {
         return results
     }
 
-    // Get cached amenities from Supabase (simplified - always check cache)
+    // Get cached amenities from Supabase using fresh_cached_amenities view
     async getCachedAmenities(bounds, type) {
         if (!this.supabase) return []
 
         try {
             console.log(`Checking for cached ${type} in database...`)
             
+            // Use the fresh_cached_amenities view which handles freshness and archival filtering
             const { data, error } = await this.supabase
-                .from('cached_amenities')
+                .from('fresh_cached_amenities')
                 .select('*')
                 .eq('type', type)
                 .gte('latitude', bounds.south)
                 .lte('latitude', bounds.north)
                 .gte('longitude', bounds.west)
                 .lte('longitude', bounds.east)
-                .gte('cached_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()) // Only fresh cache (< 24h)
 
             if (error) {
                 console.error('Error fetching cached amenities:', error)
@@ -136,7 +140,7 @@ class SupabaseGPXAmenityFinder {
             }
 
             if (data && data.length > 0) {
-                console.log(`Found ${data.length} cached ${type} amenities`)
+                console.log(`Found ${data.length} fresh cached ${type} amenities`)
                 return data.map(amenity => ({
                     id: amenity.external_id,
                     lat: amenity.latitude,
@@ -329,6 +333,44 @@ class SupabaseGPXAmenityFinder {
         }
     }
 
+    // Update user suggestion in Supabase
+    async updateSuggestion(suggestionId, updatedData) {
+        if (!this.supabase) {
+            throw new Error('Supabase not configured')
+        }
+
+        try {
+            const { data, error } = await this.supabase
+                .from('user_suggested_amenities')
+                .update({
+                    type: updatedData.type,
+                    name: updatedData.name,
+                    description: updatedData.description || null,
+                    latitude: updatedData.lat,
+                    longitude: updatedData.lng,
+                    distance_to_route: Math.round(updatedData.distanceToRoute * 10) / 10
+                })
+                .eq('id', suggestionId)
+                .is('archived_at', null) // Only update non-archived suggestions
+                .select()
+
+            if (error) {
+                throw error
+            }
+
+            if (data && data.length > 0) {
+                console.log('✅ Suggestion updated successfully:', data[0])
+                return data[0]
+            } else {
+                throw new Error('Suggestion not found or unable to update')
+            }
+
+        } catch (error) {
+            console.error('Error updating suggestion:', error)
+            throw error
+        }
+    }
+
     // Archive (soft delete) user suggestion from Supabase
     async deleteUserSuggestion(id) {
         if (!this.supabase) {
@@ -354,6 +396,36 @@ class SupabaseGPXAmenityFinder {
         } catch (error) {
             console.error('Error archiving suggestion:', error)
             throw error
+        }
+    }
+
+    // Filter out heavily flagged amenities
+    async filterHeavilyFlaggedAmenities(amenities, type) {
+        if (!this.supabase || !amenities.length) return amenities
+
+        try {
+            // Get all heavily flagged amenities for this type
+            const { data: flaggedAmenities, error } = await this.supabase
+                .rpc('get_heavily_flagged_amenities', { amenity_type: type })
+
+            if (error) {
+                console.error('Error fetching flagged amenities:', error)
+                return amenities // Return unfiltered if error
+            }
+
+            if (!flaggedAmenities || flaggedAmenities.length === 0) {
+                return amenities // No flagged amenities to filter
+            }
+
+            // Create a Set of flagged IDs for faster lookup
+            const flaggedIds = new Set(flaggedAmenities.map(item => item.external_id))
+            
+            // Filter out heavily flagged amenities
+            return amenities.filter(amenity => !flaggedIds.has(amenity.id.toString()))
+
+        } catch (error) {
+            console.error('Error filtering flagged amenities:', error)
+            return amenities // Return unfiltered if error
         }
     }
 

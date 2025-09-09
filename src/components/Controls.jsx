@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { colors } from './MapView'
 
 function Controls({ visibleLayers, onToggleLayer, editMode, onToggleSuggestMode }) {
+  const [isCollapsed, setIsCollapsed] = useState(false)
   const legendItems = [
     { type: 'toilets', label: 'Bathrooms', color: colors.toilets },
     { type: 'cafes', label: 'Cafes', color: colors.cafes },
@@ -9,61 +11,61 @@ function Controls({ visibleLayers, onToggleLayer, editMode, onToggleSuggestMode 
   ]
 
   return (
-    <div className="controls">
-      <div className="control-group">
-        <div style={{ marginBottom: '5px' }}>
-          <strong>Amenities:</strong>
-        </div>
-        <div className="checkbox-group">
-          {legendItems.slice(0, 3).map(item => (
-            <div key={item.type} className="checkbox-item">
-              <input
-                type="checkbox"
-                id={`show-${item.type}`}
-                checked={visibleLayers[item.type]}
-                onChange={() => onToggleLayer(item.type)}
-              />
-              <label htmlFor={`show-${item.type}`} style={{ color: item.color }}>
-                {item.label}
-              </label>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* <div className="legend">
-        <div style={{ marginBottom: '10px' }}>
-          <strong>Legend:</strong>
-        </div>
-        {legendItems.map(item => (
-          <div key={item.type} className="legend-item">
-            <div
-              className="legend-color"
-              style={{ backgroundColor: item.color }}
-            ></div>
-            <span>{item.label}</span>
-          </div>
-        ))}
-      </div> */}
-
-      <button
-        className={`edit-btn ${editMode === 'suggest' ? 'active' : ''}`}
-        onClick={onToggleSuggestMode}
-      >
-        Suggest New Spot
-      </button>
-
-      <div className="shoeme-section">
-        <div className="shoeme-text">Looking for new shoes?</div>
-        <a 
-          href="https://shoeme.fit" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="shoeme-link"
+    <div className={`controls ${isCollapsed ? 'collapsed' : ''}`}>
+      <div className="controls-header">
+        <span className="controls-title">Controls</span>
+        <button 
+          className="collapse-btn"
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          aria-label={isCollapsed ? 'Expand controls' : 'Collapse controls'}
         >
-          ShoeMe
-        </a>
+          {isCollapsed ? '▼' : '▲'}
+        </button>
       </div>
+      
+      {!isCollapsed && (
+        <div className="controls-content">
+          <div className="control-group">
+            <div className="section-title">
+              <strong>Amenities:</strong>
+            </div>
+            <div className="checkbox-group">
+              {legendItems.slice(0, 3).map(item => (
+                <div key={item.type} className="checkbox-item">
+                  <input
+                    type="checkbox"
+                    id={`show-${item.type}`}
+                    checked={visibleLayers[item.type]}
+                    onChange={() => onToggleLayer(item.type)}
+                  />
+                  <label htmlFor={`show-${item.type}`} style={{ color: item.color }}>
+                    {item.label}
+                  </label>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <button
+            className={`edit-btn ${editMode === 'suggest' ? 'active' : ''}`}
+            onClick={onToggleSuggestMode}
+          >
+            Suggest New
+          </button>
+
+          <div className="shoeme-section">
+            <div className="shoeme-text">Looking for new shoes?</div>
+            <a
+              href="https://shoeme.fit"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="shoeme-link"
+            >
+              ShoeMe
+            </a>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

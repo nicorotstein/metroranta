@@ -159,8 +159,19 @@ function App() {
   const handleFlagSpot = async (amenityId, type, name) => {
     if (confirm(`Report "${name}" as incorrect or problematic?`)) {
       try {
-        await gpxFinder.flagAmenity(amenityId, type)
-        alert(`Thank you for your report! This helps improve the data quality.`)
+        const result = await gpxFinder.flagAmenity(amenityId, type)
+        
+        // Check if the amenity was archived due to reaching threshold
+        if (result && result.amenity_archived) {
+          // Remove the flagged amenity from UI immediately
+          setAmenities(prevAmenities => ({
+            ...prevAmenities,
+            [type]: prevAmenities[type].filter(amenity => amenity.id.toString() !== amenityId)
+          }))
+          alert(`Thank you for your report! This amenity has been removed due to multiple reports.`)
+        } else {
+          alert(`Thank you for your report! This helps improve the data quality.`)
+        }
       } catch (error) {
         console.error('Error flagging amenity:', error)
         alert('Sorry, there was an error submitting your report. Please try again.')
@@ -205,8 +216,40 @@ function App() {
     }
 
     if (selectedSpot) {
-      // Update existing suggestion - for now just show alert
-      alert(`Spot "${suggestion.name}" information updated!`)
+      // Update existing suggestion in database and local state
+      try {
+        await gpxFinder.updateSuggestion(selectedSpot.id, suggestion)
+        
+        let updatedSuggestions = { ...userSuggestions }
+        
+        // Find which type the original suggestion was in
+        let originalType = null
+        for (const type of ['toilets', 'cafes', 'indoor']) {
+          if (userSuggestions[type].some(item => item.id === selectedSpot.id)) {
+            originalType = type
+            break
+          }
+        }
+        
+        if (originalType) {
+          // Remove from original type
+          updatedSuggestions[originalType] = userSuggestions[originalType].filter(item => item.id !== selectedSpot.id)
+          
+          // Add to new type (might be the same)
+          updatedSuggestions[suggestion.type] = [
+            ...updatedSuggestions[suggestion.type], 
+            { ...suggestion, userSuggestion: true }
+          ]
+          
+          setUserSuggestions(updatedSuggestions)
+        }
+        
+        alert(`Spot "${suggestion.name}" information updated successfully!`)
+      } catch (error) {
+        console.error('Error updating suggestion:', error)
+        alert('Sorry, there was an error updating your suggestion. Please try again.')
+        return
+      }
     } else {
       // Submit new suggestion to Supabase
       try {

@@ -47,16 +47,18 @@ function AmenityMarker({ amenity, type, onEditSpot, onDeleteSuggestion, onFlagSp
         <div>
           <strong>{amenity.name}</strong>
           {amenity.userSuggestion && (
-            <span style={{ color: '#e74c3c', marginLeft: '5px' }}>(User Suggestion)</span>
+            <span style={{ color: 'gray', marginLeft: '5px' }}>(user suggestion)</span>
           )}
           <br />
+
+          {distanceToFinish !== null && (
+            <>Distance to finish: <span style={{ fontWeight: 'bold' }}>{(distanceToFinish / 1000).toFixed(1)}km<br /></span></>
+          )}
+
           Type: {type.charAt(0).toUpperCase() + type.slice(1)}
           <br />
           Distance from route: {distance}m
           <br />
-          {distanceToFinish !== null && (
-            <>Distance to finish: {(distanceToFinish / 1000).toFixed(1)}km<br /></>
-          )}
 
           {amenity.tags?.opening_hours && (
             <>Hours: {amenity.tags.opening_hours}<br /></>
@@ -73,20 +75,22 @@ function AmenityMarker({ amenity, type, onEditSpot, onDeleteSuggestion, onFlagSp
             <>Description: {amenity.description}<br /></>
           )}
           <div style={{ marginTop: '5px' }}>
-            <button
-              onClick={() => onEditSpot(amenity)}
-              style={{
-                background: '#f39c12',
-                color: 'white',
-                border: 'none',
-                padding: '4px 8px',
-                borderRadius: '3px',
-                cursor: 'pointer',
-                marginRight: '5px'
-              }}
-            >
-              Edit
-            </button>
+            {amenity.userSuggestion && (
+              <button
+                onClick={() => onEditSpot(amenity)}
+                style={{
+                  background: '#f39c12',
+                  color: 'white',
+                  border: 'none',
+                  padding: '4px 8px',
+                  borderRadius: '3px',
+                  cursor: 'pointer',
+                  marginRight: '5px'
+                }}
+              >
+                Edit
+              </button>
+            )}
             {amenity.userSuggestion ? (
               <button
                 onClick={() => onDeleteSuggestion(amenity.id, type)}
@@ -111,11 +115,10 @@ function AmenityMarker({ amenity, type, onEditSpot, onDeleteSuggestion, onFlagSp
                   border: 'none',
                   padding: '4px 8px',
                   borderRadius: '3px',
-                  cursor: 'pointer',
-                  marginLeft: '5px'
+                  cursor: 'pointer'
                 }}
               >
-                Report Issue
+                Report
               </button>
             )}
           </div>
@@ -266,7 +269,8 @@ function MapView({
           icon={L.divIcon({
             className: 'temp-marker',
             html: '📍',
-            iconSize: [20, 20]
+            iconSize: [40, 40],
+            iconAnchor: [20, 40]
           })}
         />
       )}

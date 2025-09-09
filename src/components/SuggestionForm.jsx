@@ -19,7 +19,7 @@ function SuggestionForm({ selectedSpot, tempMarkerPosition, onSubmit, onCancel }
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    
+
     if (!formData.name.trim()) {
       alert('Please enter a name for the spot.')
       return
@@ -33,16 +33,15 @@ function SuggestionForm({ selectedSpot, tempMarkerPosition, onSubmit, onCancel }
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
-  const locationText = tempMarkerPosition 
+  const locationText = tempMarkerPosition
     ? `Lat: ${tempMarkerPosition.lat.toFixed(6)}, Lng: ${tempMarkerPosition.lng.toFixed(6)}`
-    : 'No location selected'
+    : <span style={{ color: 'red' }}>No location selected</span>
 
   return (
     <div className="suggestion-form">
       <h3>{selectedSpot ? 'Edit Spot Information' : 'Suggest New Spot'}</h3>
       <form onSubmit={handleSubmit}>
         <div className="form-group">
-          <label htmlFor="spot-type">Type:</label>
           <select
             id="spot-type"
             name="type"
@@ -56,7 +55,6 @@ function SuggestionForm({ selectedSpot, tempMarkerPosition, onSubmit, onCancel }
         </div>
 
         <div className="form-group">
-          <label htmlFor="spot-name">Name:</label>
           <input
             type="text"
             id="spot-name"
@@ -68,7 +66,6 @@ function SuggestionForm({ selectedSpot, tempMarkerPosition, onSubmit, onCancel }
         </div>
 
         <div className="form-group">
-          <label htmlFor="spot-description">Description (optional):</label>
           <textarea
             id="spot-description"
             name="description"
@@ -88,7 +85,7 @@ function SuggestionForm({ selectedSpot, tempMarkerPosition, onSubmit, onCancel }
             Cancel
           </button>
           <button type="submit" className="form-btn primary">
-            {selectedSpot ? 'Update' : 'Submit'} Suggestion
+            {selectedSpot ? 'Update' : 'Submit'}
           </button>
         </div>
       </form>
