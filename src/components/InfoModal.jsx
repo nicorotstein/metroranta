@@ -9,12 +9,12 @@ const InfoModal = ({ isOpen, onClose }) => {
       try {
         const introContent = `
 🚇 Distance: 50 km
-🏝️ Route: Kivenlahti → Vuosaari, following the shoreline
+🏝️ Route: Kivenlahti → Vuosaari, by the shore
 💨 One pace group: (TBC)
 ⚠️ No need to cover the full distance
 	💜 Join at any point along the way
-	💙 Use the interactive map to choose your start
-	💚 Best if we all cross the finish line together ✨
+	💙 Use the map to choose your start
+	💚 Best if we all cross the finish line together
 `
         setIntroText(introContent)
       } catch (error) {

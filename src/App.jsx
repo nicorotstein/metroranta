@@ -296,7 +296,7 @@ function App() {
         <div className="navbar-content">
           <div className="navbar-left">
             <button
-              className="info-button"
+              className="info-button desktop-only"
               onClick={() => setShowInfoModal(true)}
               title="About this event"
             >
@@ -305,6 +305,13 @@ function App() {
             <h1>HEL Metroranta 50K 🗓️ 18 Oct 2025</h1>
           </div>
           <div className="header-links">
+            <button
+              className="info-button mobile-only"
+              onClick={() => setShowInfoModal(true)}
+              title="About this event"
+            >
+              👟
+            </button>
             <a href="https://t.me/+U9XvW8AGoNwwNDc0" target="_blank" rel="noopener noreferrer">
               Join Telegram
             </a>
