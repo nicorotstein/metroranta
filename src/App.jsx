@@ -3,6 +3,7 @@ import MapView from './components/MapView'
 import Controls from './components/Controls'
 import SuggestionForm from './components/SuggestionForm'
 import LoadingSpinner from './components/LoadingSpinner'
+import InfoModal from './components/InfoModal'
 import SupabaseGPXAmenityFinder from './services/supabase'
 import 'leaflet/dist/leaflet.css'
 import './App.css'
@@ -18,11 +19,19 @@ function App() {
   const [showSuggestionForm, setShowSuggestionForm] = useState(false)
   const [selectedSpot, setSelectedSpot] = useState(null)
   const [tempMarkerPosition, setTempMarkerPosition] = useState(null)
+  const [showInfoModal, setShowInfoModal] = useState(false)
   const [gpxFinder] = useState(() => new SupabaseGPXAmenityFinder())
 
   useEffect(() => {
     loadGPXData()
     loadUserSuggestions()
+
+    // Check if this is the user's first visit
+    const hasSeenModal = localStorage.getItem('modalOnStartup')
+    if (!hasSeenModal) {
+      setShowInfoModal(true)
+      localStorage.setItem('modalOnStartup', 'true')
+    }
   }, [])
 
   const loadUserSuggestions = async () => {
@@ -285,7 +294,16 @@ function App() {
     <div className="app">
       <header className="app-navbar">
         <div className="navbar-content">
-          <h1>HEL Metroranta 50K 🗓️ 18 Oct 2025</h1>
+          <div className="navbar-left">
+            <button
+              className="info-button"
+              onClick={() => setShowInfoModal(true)}
+              title="About this event"
+            >
+              👟
+            </button>
+            <h1>HEL Metroranta 50K 🗓️ 18 Oct 2025</h1>
+          </div>
           <div className="header-links">
             <a href="https://t.me/+U9XvW8AGoNwwNDc0" target="_blank" rel="noopener noreferrer">
               Join Telegram
@@ -325,6 +343,11 @@ function App() {
           onCancel={closeSuggestionForm}
         />
       )}
+
+      <InfoModal
+        isOpen={showInfoModal}
+        onClose={() => setShowInfoModal(false)}
+      />
     </div>
   )
 }

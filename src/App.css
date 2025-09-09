@@ -36,6 +36,32 @@ body {
   width: 100%;
 }
 
+.navbar-left {
+  display: flex;
+  align-items: center;
+}
+
+.info-button {
+  background: none;
+  border: 1px solid #444;
+  color: #c4a3e8;
+  font-size: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.info-button:hover {
+  background: rgba(68, 68, 68, 0.8);
+  border-color: #666;
+  color: #e8a3d3;
+}
+
 .app-navbar h1 {
   margin: 0;
   font-size: 1.25rem;
@@ -43,6 +69,7 @@ body {
   color: #c4a3e8;
   white-space: nowrap;
   line-height: 1.2;
+  padding: 0 1rem;
 }
 
 .header-links {
@@ -478,9 +505,12 @@ body {
     padding: 1rem 2rem;
   }
 
+  .navbar-left {
+    order: 1;
+  }
+
   .app-navbar h1 {
     text-align: center;
-    order: 1;
   }
 
   .header-links {
@@ -527,6 +557,10 @@ body {
     gap: 0.5rem;
     align-items: center;
     padding: 1rem 2rem;
+  }
+
+  .navbar-left {
+    order: 1;
   }
 
   .controls {
