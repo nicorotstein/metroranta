@@ -302,7 +302,10 @@ function App() {
             >
               👟
             </button>
-            <h1>HEL Metroranta 50K 🗓️ 18 Oct 2025</h1>
+            <h1>
+              <span className="title-line" style={{ margin: '0 2rem' }}>HEL Metroranta 50K</span>
+              <span className="date-line">18 October 2025</span>
+            </h1>
           </div>
           <div className="header-links">
             <button
@@ -322,39 +325,41 @@ function App() {
         </div>
       </header>
 
-      <MapView
-        routeCoords={routeCoords}
-        amenities={amenities}
-        userSuggestions={userSuggestions}
-        visibleLayers={visibleLayers}
-        tempMarkerPosition={tempMarkerPosition}
-        onMapClick={handleMapClick}
-        onEditSpot={handleEditSpot}
-        onDeleteSuggestion={deleteUserSuggestion}
-        onFlagSpot={handleFlagSpot}
-        gpxFinder={gpxFinder}
-      />
-
-      <Controls
-        visibleLayers={visibleLayers}
-        onToggleLayer={(layer) => setVisibleLayers(prev => ({ ...prev, [layer]: !prev[layer] }))}
-        editMode={editMode}
-        onToggleSuggestMode={toggleSuggestMode}
-      />
-
-      {showSuggestionForm && (
-        <SuggestionForm
-          selectedSpot={selectedSpot}
+      <div className="app-content">
+        <MapView
+          routeCoords={routeCoords}
+          amenities={amenities}
+          userSuggestions={userSuggestions}
+          visibleLayers={visibleLayers}
           tempMarkerPosition={tempMarkerPosition}
-          onSubmit={submitSuggestion}
-          onCancel={closeSuggestionForm}
+          onMapClick={handleMapClick}
+          onEditSpot={handleEditSpot}
+          onDeleteSuggestion={deleteUserSuggestion}
+          onFlagSpot={handleFlagSpot}
+          gpxFinder={gpxFinder}
         />
-      )}
 
-      <InfoModal
-        isOpen={showInfoModal}
-        onClose={() => setShowInfoModal(false)}
-      />
+        <Controls
+          visibleLayers={visibleLayers}
+          onToggleLayer={(layer) => setVisibleLayers(prev => ({ ...prev, [layer]: !prev[layer] }))}
+          editMode={editMode}
+          onToggleSuggestMode={toggleSuggestMode}
+        />
+
+        {showSuggestionForm && (
+          <SuggestionForm
+            selectedSpot={selectedSpot}
+            tempMarkerPosition={tempMarkerPosition}
+            onSubmit={submitSuggestion}
+            onCancel={closeSuggestionForm}
+          />
+        )}
+
+        <InfoModal
+          isOpen={showInfoModal}
+          onClose={() => setShowInfoModal(false)}
+        />
+      </div>
     </div>
   )
 }
