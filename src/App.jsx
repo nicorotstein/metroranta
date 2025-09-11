@@ -315,11 +315,14 @@ function App() {
             >
               👟
             </button>
-            <a href="https://t.me/+U9XvW8AGoNwwNDc0" target="_blank" rel="noopener noreferrer">
-              Join Telegram
+            <a href="https://www.strava.com/clubs/1736828/group_events/3401107341376278656" target="_blank" rel="noopener noreferrer">
+              Event
             </a>
-            <a href="https://www.strava.com/routes/3375457343970102656" target="_blank" rel="noopener noreferrer">
-              Strava route
+            <a href="https://t.me/+U9XvW8AGoNwwNDc0" target="_blank" rel="noopener noreferrer">
+              Chat
+            </a>
+            <a href="https://connect.garmin.com/modern/course/402420870" target="_blank" rel="noopener noreferrer">
+              Route
             </a>
           </div>
         </div>
