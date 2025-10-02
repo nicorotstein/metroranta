@@ -11,8 +11,8 @@ const InfoModal = ({ isOpen, onClose }) => {
 🏝️  From Kivenlahti to Vuosaari, along the beautiful shore
 📍  Meeting point: Kivenlahti metro station
 💨  Two pace groups:
-	🟠  6:00/km starting at ⏰ 9:00 AM
-	🔵  7:00/km starting at ⏰ 9:50 AM
+	🟠  7:00/km starting at ⏰ 9:00 AM
+	🔵  6:00/km starting at ⏰ 9:50 AM
 ❤️  Run as much or as little as you like:
 	🧡  Jump in anywhere along the route
 	💙  Check the map and pick your perfect starting point
