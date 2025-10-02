@@ -7,14 +7,16 @@ const InfoModal = ({ isOpen, onClose }) => {
   useEffect(() => {
     const loadIntroText = async () => {
       try {
-        const introContent = `
-🚇 Distance: 50 km
-🏝️ Route: Kivenlahti → Vuosaari, by the shore
-💨 One pace group: (TBC)
-❤️ No need to cover the full distance
-	💜 Join at any point along the way
-	💙 Use the map to choose your start
-	💚 Best if we all cross the finish line together!
+        const introContent = `🚇  We're running 50 km together!
+🏝️  From Kivenlahti to Vuosaari, along the beautiful shore
+📍  Meeting point: Kivenlahti metro station
+💨  Two pace groups:
+	🟠  6:00/km starting at ⏰ 9:00 AM
+	🔵  7:00/km starting at ⏰ 9:50 AM
+❤️  Run as much or as little as you like:
+	🧡  Jump in anywhere along the route
+	💙  Check the map and pick your perfect starting point
+	💚  The magic happens when we all finish together!
 `
         setIntroText(introContent)
       } catch (error) {
@@ -34,7 +36,7 @@ const InfoModal = ({ isOpen, onClose }) => {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>About HEL Metroranta 50K</h2>
+          <h2>Welcome to Metroranta! 🥳</h2>
           <button className="modal-close" onClick={onClose}>×</button>
         </div>
         <div className="modal-body">

@@ -23,8 +23,8 @@ function App() {
   const [gpxFinder] = useState(() => new SupabaseGPXAmenityFinder())
 
   useEffect(() => {
-    loadGPXData()
-    loadUserSuggestions()
+    // Load data in parallel for better performance
+    Promise.all([loadGPXData(), loadUserSuggestions()])
 
     // Check if this is the user's first visit
     const hasSeenModal = localStorage.getItem('modalOnStartup')
@@ -298,7 +298,7 @@ function App() {
             <button
               className="info-button desktop-only"
               onClick={() => setShowInfoModal(true)}
-              title="About this event"
+              title="Event details"
             >
               👟
             </button>
@@ -311,7 +311,7 @@ function App() {
             <button
               className="info-button mobile-only"
               onClick={() => setShowInfoModal(true)}
-              title="About this event"
+              title="Event details"
             >
               👟
             </button>
@@ -324,9 +324,9 @@ function App() {
             <a href="https://connect.garmin.com/modern/course/402420870" target="_blank" rel="noopener noreferrer">
               Route
             </a>
-          </div>
-        </div>
-      </header>
+          </div >
+        </div >
+      </header >
 
       <div className="app-content">
         <MapView
@@ -363,7 +363,7 @@ function App() {
           onClose={() => setShowInfoModal(false)}
         />
       </div>
-    </div>
+    </div >
   )
 }
 

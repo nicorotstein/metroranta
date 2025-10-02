@@ -56,56 +56,81 @@ class SupabaseGPXAmenityFinder {
         const bounds = this.getRouteBounds(maxDistance)
         if (!bounds) throw new Error('No route loaded')
 
-        const results = {}
         const types = ['toilets', 'cafes', 'indoor']
 
-        for (const type of types) {
-            try {
-                // Step 1: Try to get cached amenities from Supabase
-                let amenitiesFromCache = await this.getCachedAmenities(bounds, type)
+        // Fetch all types in parallel instead of sequentially
+        const results = await Promise.all(
+            types.map(async (type) => {
+                try {
+                    // Step 1: Try to get cached amenities from Supabase
+                    let amenitiesFromCache = await this.getCachedAmenities(bounds, type)
 
-                if (amenitiesFromCache && amenitiesFromCache.length > 0) {
-                    results[type] = amenitiesFromCache
-                } else {
-                    // Step 2: No cache, fetch fresh from Overpass API
-                    const freshAmenities = await this.fetchFromOverpassAPI(bounds, type, maxDistance)
+                    if (amenitiesFromCache && amenitiesFromCache.length > 0) {
+                        // Step 4: Add approved user-suggested amenities
+                        if (this.supabase) {
+                            const userSuggested = await this.getUserSuggestedAmenities(bounds, type)
+                            if (userSuggested.length > 0) {
+                                const filteredUserSuggested = userSuggested.map(suggestion => ({
+                                    ...suggestion,
+                                    lat: suggestion.latitude,
+                                    lng: suggestion.longitude,
+                                    userSuggestion: true,
+                                    distanceToRoute: this.getMinDistanceToRoute(suggestion.latitude, suggestion.longitude)
+                                }))
+                                    .filter(item => item.distanceToRoute <= maxDistance)
 
-                    // Step 2.5: Filter out heavily flagged amenities
-                    const filteredFreshAmenities = await this.filterHeavilyFlaggedAmenities(freshAmenities, type)
+                                return { type, data: [...amenitiesFromCache, ...filteredUserSuggested] }
+                            }
+                        }
+                        return { type, data: amenitiesFromCache }
+                    } else {
+                        // Step 2: No cache, fetch fresh from Overpass API
+                        const freshAmenities = await this.fetchFromOverpassAPI(bounds, type, maxDistance)
 
-                    // Step 3: Cache the fresh results in Supabase for next time
-                    if (this.supabase && filteredFreshAmenities.length > 0) {
-                        await this.cacheAmenities(bounds, type, filteredFreshAmenities)
+                        // Step 2.5: Filter out heavily flagged amenities
+                        const filteredFreshAmenities = await this.filterHeavilyFlaggedAmenities(freshAmenities, type)
+
+                        // Step 3: Cache the fresh results in Supabase for next time
+                        if (this.supabase && filteredFreshAmenities.length > 0) {
+                            await this.cacheAmenities(bounds, type, filteredFreshAmenities)
+                        }
+
+                        // Step 4: Add approved user-suggested amenities
+                        let finalAmenities = filteredFreshAmenities
+                        if (this.supabase) {
+                            const userSuggested = await this.getUserSuggestedAmenities(bounds, type)
+                            if (userSuggested.length > 0) {
+                                const filteredUserSuggested = userSuggested.map(suggestion => ({
+                                    ...suggestion,
+                                    lat: suggestion.latitude,
+                                    lng: suggestion.longitude,
+                                    userSuggestion: true,
+                                    distanceToRoute: this.getMinDistanceToRoute(suggestion.latitude, suggestion.longitude)
+                                }))
+                                    .filter(item => item.distanceToRoute <= maxDistance)
+
+                                finalAmenities = [...filteredFreshAmenities, ...filteredUserSuggested]
+                            }
+                        }
+
+                        return { type, data: finalAmenities }
                     }
 
-                    results[type] = filteredFreshAmenities
+                } catch (error) {
+                    console.error(`Error finding ${type}:`, error)
+                    return { type, data: [] }
                 }
+            })
+        )
 
-                // Step 4: Add approved user-suggested amenities
-                if (this.supabase) {
-                    const userSuggested = await this.getUserSuggestedAmenities(bounds, type)
-                    if (userSuggested.length > 0) {
-                        const filteredUserSuggested = userSuggested.map(suggestion => ({
-                            ...suggestion,
-                            lat: suggestion.latitude,
-                            lng: suggestion.longitude,
-                            userSuggestion: true,
-                            distanceToRoute: this.getMinDistanceToRoute(suggestion.latitude, suggestion.longitude)
-                        }))
-                            .filter(item => item.distanceToRoute <= maxDistance)
+        // Convert array to object
+        const amenitiesObj = results.reduce((acc, { type, data }) => {
+            acc[type] = data
+            return acc
+        }, {})
 
-                        results[type] = [...results[type], ...filteredUserSuggested]
-                    }
-                }
-
-            } catch (error) {
-                console.error(`Error finding ${type}:`, error)
-                results[type] = []
-            }
-        }
-
-        this.amenities = results
-        return results
+        this.amenities = amenitiesObj
+        return amenitiesObj
     }
 
     // Get cached amenities from Supabase using fresh_cached_amenities view
@@ -129,6 +154,7 @@ class SupabaseGPXAmenityFinder {
             }
 
             if (data && data.length > 0) {
+                console.log(`✓ Cache hit: Found ${data.length} cached ${type} from database`)
                 return data.map(amenity => ({
                     id: amenity.external_id,
                     lat: amenity.latitude,
@@ -138,6 +164,7 @@ class SupabaseGPXAmenityFinder {
                     distanceToRoute: amenity.distance_to_route || 0
                 }))
             } else {
+                console.log(`✗ Cache miss: No cached ${type} found, will fetch from Overpass API`)
                 return []
             }
 
@@ -152,6 +179,8 @@ class SupabaseGPXAmenityFinder {
         if (!this.supabase || !amenities.length) return
 
         try {
+            const currentTimestamp = new Date().toISOString()
+
             // Prepare amenities for insertion
             const amenitiesData = amenities.map(amenity => ({
                 external_id: amenity.id.toString(),
@@ -160,7 +189,8 @@ class SupabaseGPXAmenityFinder {
                 latitude: amenity.lat,
                 longitude: amenity.lng,
                 tags: amenity.tags || {},
-                distance_to_route: Math.round(amenity.distanceToRoute * 10) / 10
+                distance_to_route: Math.round(amenity.distanceToRoute * 10) / 10,
+                cached_at: currentTimestamp  // Refresh cache timestamp on every upsert
             }))
 
             // Insert amenities (using upsert to handle duplicates)
@@ -175,6 +205,8 @@ class SupabaseGPXAmenityFinder {
                 console.error('Error caching amenities:', amenitiesError)
                 return
             }
+
+            console.log(`Successfully cached ${amenitiesData.length} ${type} amenities`)
 
         } catch (error) {
             console.error('Error in cacheAmenities:', error)
