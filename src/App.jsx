@@ -321,7 +321,7 @@ function App() {
             <a href="https://t.me/+U9XvW8AGoNwwNDc0" target="_blank" rel="noopener noreferrer">
               Chat
             </a>
-            <a href="https://connect.garmin.com/modern/course/408637734" target="_blank" rel="noopener noreferrer">
+            <a href="https://connect.garmin.com/modern/course/408775313" target="_blank" rel="noopener noreferrer">
               Route
             </a>
           </div >
