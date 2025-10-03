@@ -67,7 +67,7 @@ function App() {
 
   const loadRouteData = async () => {
     try {
-      console.log('Fetching route-data.json...')
+      console.log('Fetching route...')
       const response = await fetch('/route-data.json')
       console.log('Response status:', response.status, response.statusText)
       if (!response.ok) {
