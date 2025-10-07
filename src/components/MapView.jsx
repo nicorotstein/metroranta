@@ -31,6 +31,93 @@ function MapClickHandler({ onMapClick }) {
 }
 
 function HopInMarker({ spot }) {
+  // Check if this spot should point from below
+  const pointFromBelow = ['Paviljonki', 'The Butter Boys', 'Mantra Ravintola'].includes(spot.name)
+
+  // Common content
+  const content = `
+    <div style="font-size: 12px; color: #2ecc71;">${spot.name}</div>
+    <div style="font-size: 12px; color: ${colors.route}; margin-bottom: 2px;">
+      ${spot.distanceToFinish}km
+    </div>
+    <div style="font-size: 12px; color: #666;">
+      6:00/km → ${spot.time6min} <br/> 7:00/km → ${spot.time7min}
+    </div>
+  `
+
+  // Common pointer elements
+  const pointer = (direction) => direction === 'up' ? `
+    <div style="
+      position: absolute;
+      top: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 8px solid transparent;
+      border-right: 8px solid transparent;
+      border-bottom: 8px solid #2ecc71;
+    "></div>
+    <div style="
+      position: absolute;
+      top: -5px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 7px solid transparent;
+      border-right: 7px solid transparent;
+      border-bottom: 7px solid white;
+    "></div>
+    <div style="
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 8px;
+      height: 8px;
+      background: #2ecc71;
+      border-radius: 50%;
+      border: 2px solid white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    "></div>
+  ` : `
+    <div style="
+      position: absolute;
+      bottom: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 8px solid transparent;
+      border-right: 8px solid transparent;
+      border-top: 8px solid #2ecc71;
+    "></div>
+    <div style="
+      position: absolute;
+      bottom: -5px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 7px solid transparent;
+      border-right: 7px solid transparent;
+      border-top: 7px solid white;
+    "></div>
+    <div style="
+      position: absolute;
+      bottom: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 8px;
+      height: 8px;
+      background: #2ecc71;
+      border-radius: 50%;
+      border: 2px solid white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    "></div>
+  `
+
   const icon = L.divIcon({
     className: 'hop-in-label',
     html: `
@@ -45,48 +132,11 @@ function HopInMarker({ spot }) {
         box-shadow: 0 3px 8px rgba(0,0,0,0.3);
         font-weight: bold;
       ">
-        <div style="color: #2ecc71; margin-bottom: 2px;">${spot.name}</div>
-        <div style="font-size: 12px; color: #666;">
-          ${spot.distanceToFinish}km <br/> 6:00/km → ${spot.time6min} <br/> 7:00/km → ${spot.time7min}
-        </div>
-        <div style="
-          position: absolute;
-          bottom: -8px;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 0;
-          height: 0;
-          border-left: 8px solid transparent;
-          border-right: 8px solid transparent;
-          border-top: 8px solid #2ecc71;
-        "></div>
-        <div style="
-          position: absolute;
-          bottom: -5px;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 0;
-          height: 0;
-          border-left: 7px solid transparent;
-          border-right: 7px solid transparent;
-          border-top: 7px solid white;
-        "></div>
-        <div style="
-          position: absolute;
-          bottom: -12px;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 8px;
-          height: 8px;
-          background: #2ecc71;
-          border-radius: 50%;
-          border: 2px solid white;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        "></div>
+        ${pointFromBelow ? pointer('up') + content : content + pointer('down')}
       </div>
     `,
     iconSize: [150, 50],
-    iconAnchor: [75, 62]
+    iconAnchor: pointFromBelow ? [75, -12] : [75, 62]
   })
 
   return (

@@ -46,7 +46,7 @@ function App() {
       const spots = lines.map(line => {
         const [name, distanceToFinish, time6min, time7min] = line.split(',')
         return {
-          name: name.trim(),
+          name: name.trim().replace(' metro station', ' Metro'),
           distanceToFinish: parseFloat(distanceToFinish),
           time6min: time6min.trim(),
           time7min: time7min.trim()
@@ -55,7 +55,7 @@ function App() {
 
       // Add the starting point as a special hop-in spot
       const startingSpot = {
-        name: 'Kivenlahti metro station',
+        name: 'Kivenlahti Metro',
         distanceToFinish: 50, // Total distance
         time6min: '09:50',
         time7min: '09:00',
