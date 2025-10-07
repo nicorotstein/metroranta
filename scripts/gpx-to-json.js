@@ -1,5 +1,8 @@
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Get input and output file paths from command line arguments
 const inputFile = process.argv[2] || path.join(__dirname, '../public/HEL Metroranta 50K.gpx');
