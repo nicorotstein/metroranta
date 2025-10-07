@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { colors } from './MapView'
 
-function Controls({ visibleLayers, onToggleLayer, editMode, onToggleSuggestMode }) {
+function Controls({ visibleLayers, onToggleLayer, editMode, onToggleSuggestMode, hopInMode }) {
   const [isCollapsed, setIsCollapsed] = useState(true)
   const legendItems = [
     { type: 'toilets', label: 'Bathrooms', color: colors.toilets },
@@ -26,8 +26,9 @@ function Controls({ visibleLayers, onToggleLayer, editMode, onToggleSuggestMode 
                     id={`show-${item.type}`}
                     checked={visibleLayers[item.type]}
                     onChange={() => onToggleLayer(item.type)}
+                    disabled={hopInMode}
                   />
-                  <label htmlFor={`show-${item.type}`} style={{ color: item.color }}>
+                  <label htmlFor={`show-${item.type}`} style={{ color: item.color, opacity: hopInMode ? 0.5 : 1 }}>
                     {item.label}
                   </label>
                 </div>

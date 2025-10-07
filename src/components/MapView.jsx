@@ -30,6 +30,73 @@ function MapClickHandler({ onMapClick }) {
   return null
 }
 
+function HopInMarker({ spot }) {
+  const icon = L.divIcon({
+    className: 'hop-in-label',
+    html: `
+      <div style="
+        position: relative;
+        background: white;
+        border: 2px solid #2ecc71;
+        border-radius: 6px;
+        padding: 6px 8px;
+        font-size: 11px;
+        white-space: nowrap;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+        font-weight: bold;
+      ">
+        <div style="color: #2ecc71; margin-bottom: 2px;">${spot.name}</div>
+        <div style="font-size: 12px; color: #666;">
+          ${spot.distanceToFinish}km <br/> 6:00/km → ${spot.time6min} <br/> 7:00/km → ${spot.time7min}
+        </div>
+        <div style="
+          position: absolute;
+          bottom: -8px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 0;
+          height: 0;
+          border-left: 8px solid transparent;
+          border-right: 8px solid transparent;
+          border-top: 8px solid #2ecc71;
+        "></div>
+        <div style="
+          position: absolute;
+          bottom: -5px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 0;
+          height: 0;
+          border-left: 7px solid transparent;
+          border-right: 7px solid transparent;
+          border-top: 7px solid white;
+        "></div>
+        <div style="
+          position: absolute;
+          bottom: -12px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 8px;
+          height: 8px;
+          background: #2ecc71;
+          border-radius: 50%;
+          border: 2px solid white;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        "></div>
+      </div>
+    `,
+    iconSize: [150, 50],
+    iconAnchor: [75, 62]
+  })
+
+  return (
+    <Marker
+      position={[spot.lat, spot.lng]}
+      icon={icon}
+    />
+  )
+}
+
 function AmenityMarker({ amenity, type, onEditSpot, onDeleteSuggestion, onFlagSpot, gpxFinder }) {
   const distance = amenity.distanceToRoute ? Math.round(amenity.distanceToRoute) : '~50'
   const distanceToFinish = gpxFinder ? Math.round(gpxFinder.getDistanceToFinish(amenity.lat, amenity.lng)) : null
@@ -138,7 +205,9 @@ function MapView({
   onEditSpot,
   onDeleteSuggestion,
   onFlagSpot,
-  gpxFinder
+  gpxFinder,
+  hopInMode,
+  hopInSpots
 }) {
   const mapRef = useRef()
 
@@ -191,7 +260,7 @@ function MapView({
         <Polyline
           positions={routeCoords}
           color={colors.route}
-          weight={3}
+          weight={5}
           opacity={0.8}
         />
       )}
@@ -236,34 +305,46 @@ function MapView({
         </Marker>
       )}
 
-      {/* Amenity Markers */}
-      {Object.entries(amenities).map(([type, items]) =>
-        visibleLayers[type] && items.map((amenity, index) => (
-          <AmenityMarker
-            key={`${type}-${amenity.id || index}`}
-            amenity={amenity}
-            type={type}
-            onEditSpot={onEditSpot}
-            onDeleteSuggestion={onDeleteSuggestion}
-            onFlagSpot={onFlagSpot}
-            gpxFinder={gpxFinder}
+      {/* Hop-in Points Mode */}
+      {hopInMode ? (
+        hopInSpots.map((spot, index) => (
+          <HopInMarker
+            key={`hopin-${index}`}
+            spot={spot}
           />
         ))
-      )}
+      ) : (
+        <>
+          {/* Amenity Markers */}
+          {Object.entries(amenities).map(([type, items]) =>
+            visibleLayers[type] && items.map((amenity, index) => (
+              <AmenityMarker
+                key={`${type}-${amenity.id || index}`}
+                amenity={amenity}
+                type={type}
+                onEditSpot={onEditSpot}
+                onDeleteSuggestion={onDeleteSuggestion}
+                onFlagSpot={onFlagSpot}
+                gpxFinder={gpxFinder}
+              />
+            ))
+          )}
 
-      {/* User Suggestion Markers */}
-      {Object.entries(userSuggestions).map(([type, items]) =>
-        visibleLayers[type] && items.map((suggestion, index) => (
-          <AmenityMarker
-            key={`suggestion-${type}-${suggestion.id || index}`}
-            amenity={suggestion}
-            type={type}
-            onEditSpot={onEditSpot}
-            onDeleteSuggestion={onDeleteSuggestion}
-            onFlagSpot={onFlagSpot}
-            gpxFinder={gpxFinder}
-          />
-        ))
+          {/* User Suggestion Markers */}
+          {Object.entries(userSuggestions).map(([type, items]) =>
+            visibleLayers[type] && items.map((suggestion, index) => (
+              <AmenityMarker
+                key={`suggestion-${type}-${suggestion.id || index}`}
+                amenity={suggestion}
+                type={type}
+                onEditSpot={onEditSpot}
+                onDeleteSuggestion={onDeleteSuggestion}
+                onFlagSpot={onFlagSpot}
+                gpxFinder={gpxFinder}
+              />
+            ))
+          )}
+        </>
       )}
 
       {/* Temporary Marker */}

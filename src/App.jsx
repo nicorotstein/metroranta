@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import MapView from './components/MapView'
 import Controls from './components/Controls'
+import HopInToggle from './components/HopInToggle'
 import SuggestionForm from './components/SuggestionForm'
 import LoadingSpinner from './components/LoadingSpinner'
 import InfoModal from './components/InfoModal'
@@ -21,10 +22,12 @@ function App() {
   const [tempMarkerPosition, setTempMarkerPosition] = useState(null)
   const [showInfoModal, setShowInfoModal] = useState(false)
   const [gpxFinder] = useState(() => new SupabaseGPXAmenityFinder())
+  const [hopInMode, setHopInMode] = useState(true)
+  const [hopInSpots, setHopInSpots] = useState([])
 
   useEffect(() => {
     // Load data in parallel for better performance
-    Promise.all([loadGPXData(), loadUserSuggestions()])
+    Promise.all([loadGPXData(), loadUserSuggestions(), loadHopInSpots()])
 
     // Check if this is the user's first visit
     const hasSeenModal = localStorage.getItem('modalOnStartup')
@@ -33,6 +36,116 @@ function App() {
       localStorage.setItem('modalOnStartup', 'true')
     }
   }, [])
+
+  const loadHopInSpots = async () => {
+    try {
+      const response = await fetch('/spots.csv')
+      const text = await response.text()
+      const lines = text.trim().split('\n').slice(1) // Skip header
+
+      const spots = lines.map(line => {
+        const [name, distanceToFinish, time6min, time7min] = line.split(',')
+        return {
+          name: name.trim(),
+          distanceToFinish: parseFloat(distanceToFinish),
+          time6min: time6min.trim(),
+          time7min: time7min.trim()
+        }
+      })
+
+      // Add the starting point as a special hop-in spot
+      const startingSpot = {
+        name: 'Kivenlahti metro station',
+        distanceToFinish: 50, // Total distance
+        time6min: '09:50',
+        time7min: '09:00',
+        isStart: true
+      }
+
+      setHopInSpots([startingSpot, ...spots])
+    } catch (error) {
+      console.error('Error loading hop-in spots:', error)
+    }
+  }
+
+  // Match hop-in spots with actual amenities to get coordinates
+  const enrichedHopInSpots = hopInSpots.map(spot => {
+    // Special handling for start marker - use first route coordinate
+    if (spot.isStart && routeCoords.length > 0) {
+      return {
+        ...spot,
+        lat: routeCoords[0][0],
+        lng: routeCoords[0][1],
+        type: 'start',
+        found: true
+      }
+    }
+
+    // Search for matching amenity by name (case-insensitive partial match)
+    const searchName = spot.name.toLowerCase()
+
+    // Combined search in both amenities and user suggestions
+    const allSources = [
+      ...Object.entries(amenities).flatMap(([type, items]) =>
+        items.map(item => ({ ...item, type }))
+      ),
+      ...Object.entries(userSuggestions).flatMap(([type, items]) =>
+        items.map(item => ({ ...item, type }))
+      )
+    ]
+
+    // Score each amenity based on how well it matches
+    const scoredMatches = allSources.map(amenity => {
+      const amenityNameLower = amenity.name.toLowerCase()
+      let score = 0
+
+      // Exact match gets highest score
+      if (amenityNameLower === searchName) {
+        score = 1000
+      } else {
+        // Extract key terms from search name
+        const searchTerms = searchName.split(/\s+/).filter(term => term.length > 3)
+        const amenityTerms = amenityNameLower.split(/\s+/).filter(term => term.length > 3)
+
+        // Count how many search terms are present in amenity name
+        const matchingTerms = searchTerms.filter(term => amenityNameLower.includes(term))
+        score += matchingTerms.length * 100
+
+        // Bonus for matching all terms
+        if (matchingTerms.length === searchTerms.length && searchTerms.length > 0) {
+          score += 200
+        }
+
+        // Bonus for similar length (penalize very different lengths)
+        const lengthDiff = Math.abs(amenityNameLower.length - searchName.length)
+        score += Math.max(0, 50 - lengthDiff)
+
+        // Check if amenity contains search or vice versa
+        if (amenityNameLower.includes(searchName)) {
+          score += 75
+        } else if (searchName.includes(amenityNameLower)) {
+          score += 50
+        }
+      }
+
+      return { amenity, score }
+    })
+
+    // Get the best match (highest score > 0)
+    const bestMatch = scoredMatches
+      .filter(m => m.score > 0)
+      .sort((a, b) => b.score - a.score)[0]
+
+    if (bestMatch) {
+      const match = bestMatch.amenity
+      console.log(`Matched "${spot.name}" to "${match.name}" (score: ${bestMatch.score})`)
+      return { ...spot, lat: match.lat, lng: match.lng, type: match.type, found: true }
+    }
+
+    // Not found - log warning
+    console.warn(`Hop-in spot not found in amenities: ${spot.name}`)
+    return { ...spot, found: false }
+  }).filter(spot => spot.found) // Only include spots that were found
 
   const loadUserSuggestions = async () => {
     try {
@@ -326,6 +439,11 @@ function App() {
       </header >
 
       <div className="app-content">
+        <HopInToggle
+          hopInMode={hopInMode}
+          onToggleHopInMode={() => setHopInMode(!hopInMode)}
+        />
+
         <MapView
           routeCoords={routeCoords}
           amenities={amenities}
@@ -337,6 +455,8 @@ function App() {
           onDeleteSuggestion={deleteUserSuggestion}
           onFlagSpot={handleFlagSpot}
           gpxFinder={gpxFinder}
+          hopInMode={hopInMode}
+          hopInSpots={enrichedHopInSpots}
         />
 
         <Controls
@@ -344,6 +464,7 @@ function App() {
           onToggleLayer={(layer) => setVisibleLayers(prev => ({ ...prev, [layer]: !prev[layer] }))}
           editMode={editMode}
           onToggleSuggestMode={toggleSuggestMode}
+          hopInMode={hopInMode}
         />
 
         {showSuggestionForm && (
